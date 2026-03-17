@@ -25,90 +25,49 @@
 </head>
 
 <body>
-    <!-- Header & Navigation -->
+    <!-- Minimal Header -->
     <header class="header">
-        <div class="container">
-            <div class="logo">
-                <i class="fas fa-newspaper"></i>
-                <h1>Currents<span>News</span></h1>
-                <div class="connection-status" id="connection-status">
-                    <span class="status-dot"></span>
-                    <span class="status-text">Online</span>
-                </div>
-            </div>
-
-            <nav class="nav">
-                <div class="nav-toggle">
-                    <i class="fas fa-bars"></i>
-                </div>
-                <ul class="nav-menu">
-                    <li><a href="#" class="nav-link active" data-category="latest"><i class="fas fa-home"></i> Latest</a></li>
-                    <li><a href="#" class="nav-link" data-category="local"><i class="fas fa-map-marker-alt"></i> Local News</a></li>
-                    <li><a href="#" class="nav-link" data-category="world"><i class="fas fa-globe"></i> World</a></li>
-                    <li><a href="#" class="nav-link" data-category="politics"><i class="fas fa-landmark"></i> Politics</a></li>
-                    <li><a href="#" class="nav-link" data-category="business"><i class="fas fa-chart-line"></i> Business</a></li>
-                    <li><a href="#" class="nav-link" data-category="technology"><i class="fas fa-laptop-code"></i> Tech</a></li>
-                    <li><a href="#" class="nav-link" data-category="sports"><i class="fas fa-running"></i> Sports</a></li>
-                    <li><a href="#" class="nav-link" data-category="entertainment"><i class="fas fa-film"></i> Entertainment</a></li>
-                    <li><a href="#" class="nav-link" id="offline-library-btn"><i class="fas fa-download"></i> Offline Library</a></li>
-                </ul>
-            </nav>
-
-            <div class="header-controls">
-                <div class="offline-indicator" id="offline-indicator" style="display: none;">
-                    <i class="fas fa-wifi-slash"></i>
-                    <span>Offline</span>
-                </div>
+        <div class="header-content">
+            <h1 class="app-title">Currents News</h1>
+            <div class="header-icons">
                 <button class="theme-toggle" title="Toggle dark mode">
                     <i class="fas fa-moon"></i>
                 </button>
-                <div class="language-selector">
-                    <select id="language-select">
-                        <option value="en">English</option>
-                        <option value="es">Spanish</option>
-                        <option value="fr">French</option>
-                        <option value="de">German</option>
-                        <option value="it">Italian</option>
-                        <option value="pt">Portuguese</option>
-                    </select>
+                <div class="offline-indicator" id="offline-indicator" style="display: none;">
+                    <i class="fas fa-wifi-slash"></i>
                 </div>
-                <button id="download-offline-btn" class="btn btn-secondary" title="Download Offline Articles">
-                    <i class="fas fa-download"></i> Download Offline
-                </button>
             </div>
         </div>
     </header>
 
     <!-- Search & Filter Section -->
     <section class="search-section">
-        <div class="container">
+        <div class="search-container">
             <div class="search-box">
                 <i class="fas fa-search"></i>
-                <input type="text" id="search-input" placeholder="Search for news, topics, or keywords...">
-                <button id="search-btn" class="btn btn-primary">
-                    <i class="fas fa-search"></i> Search
-                </button>
-                <button id="advanced-toggle" class="btn btn-secondary">
-                    <i class="fas fa-filter"></i> Filters
-                </button>
-                <button id="offline-search-toggle" class="btn btn-secondary" title="Search offline articles">
-                    <i class="fas fa-database"></i> Offline Search
-                </button>
+                <input type="text" id="search-input" placeholder="Search news...">
             </div>
+            <button id="search-btn" class="search-btn-icon" title="Search">
+                <i class="fas fa-arrow-right"></i>
+            </button>
+            <button id="advanced-toggle" class="search-btn-icon" title="Filters">
+                <i class="fas fa-sliders-h"></i>
+            </button>
+        </div>
 
-            <div class="advanced-filters" id="advanced-filters">
-                <div class="filter-row">
-                    <div class="filter-group">
-                        <label for="start-date"><i class="far fa-calendar-alt"></i> Start Date</label>
-                        <input type="date" id="start-date">
-                    </div>
-                    <div class="filter-group">
-                        <label for="end-date"><i class="far fa-calendar-alt"></i> End Date</label>
-                        <input type="date" id="end-date">
-                    </div>
-                    <div class="filter-group">
-                        <label for="category-filter"><i class="fas fa-tag"></i> Category</label>
-                        <select id="category-filter">
+        <div class="advanced-filters" id="advanced-filters">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="start-date"><i class="far fa-calendar-alt"></i> Start Date</label>
+                    <input type="date" id="start-date">
+                </div>
+                <div class="filter-group">
+                    <label for="end-date"><i class="far fa-calendar-alt"></i> End Date</label>
+                    <input type="date" id="end-date">
+                </div>
+                <div class="filter-group">
+                    <label for="category-filter"><i class="fas fa-tag"></i> Category</label>
+                    <select id="category-filter">
                             <option value="">All Categories</option>
                             <option value="world">World</option>
                             <option value="politics">Politics</option>
@@ -119,21 +78,21 @@
                             <option value="science">Science</option>
                             <option value="health">Health</option>
                         </select>
-                    </div>
-                    <div class="filter-group">
-                        <label for="domain-filter"><i class="fas fa-globe"></i> Domain</label>
-                        <input type="text" id="domain-filter" placeholder="e.g., bbc.com, nytimes.com">
-                    </div>
                 </div>
-                <div class="filter-actions">
-                    <button id="apply-filters" class="btn btn-primary">
-                        <i class="fas fa-check"></i> Apply Filters
-                    </button>
-                    <button id="clear-filters" class="btn btn-secondary">
-                        <i class="fas fa-times"></i> Clear All
-                    </button>
+                <div class="filter-group">
+                    <label for="domain-filter"><i class="fas fa-globe"></i> Domain</label>
+                    <input type="text" id="domain-filter" placeholder="e.g., bbc.com, nytimes.com">
                 </div>
             </div>
+            <div class="filter-actions">
+                <button id="apply-filters" class="btn btn-primary">
+                        <i class="fas fa-check"></i> Apply Filters
+                    </button>
+                <button id="clear-filters" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Clear All
+                    </button>
+            </div>
+        </div>
         </div>
     </section>
 
@@ -161,23 +120,6 @@
                 <button id="use-offline-btn" class="btn btn-secondary">
                     <i class="fas fa-database"></i> Use Offline Articles
                 </button>
-            </div>
-
-            <!-- Stats Bar -->
-            <div class="stats-bar" id="stats-bar">
-                <div class="stats-item">
-                    <i class="fas fa-newspaper"></i>
-                    <span id="article-count">0</span> Articles
-                </div>
-                <div class="stats-item">
-                    <i class="fas fa-clock"></i> Updated: <span id="last-updated">Just now</span>
-                </div>
-                <div class="stats-item">
-                    <i class="fas fa-database"></i> Offline: <span id="offline-count">0</span> articles
-                </div>
-                <div class="stats-item">
-                    <i class="fas fa-language"></i> Language: <span id="current-language">English</span>
-                </div>
             </div>
 
             <!-- News Grid -->
@@ -238,41 +180,63 @@
         </div>
     </main>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-section">
-                    <h3><i class="fas fa-newspaper"></i> Currents News</h3>
-                    <p>Global news from over 50 countries in 15 languages. Powered by Currents News API.</p>
-                    <div class="footer-links">
-                        <a href="https://currentsapi.services/" target="_blank">API Documentation</a>
-                        <a href="#" id="view-source">View Source Code</a>
-                        <a href="#" id="refresh-news">Refresh News</a>
-                        <a href="#" id="storage-manager">Manage Storage</a>
-                    </div>
-                </div>
-                <div class="footer-section">
-                    <h3><i class="fas fa-info-circle"></i> About</h3>
-                    <p>This application uses the Currents News API to provide real-time and historical news from thousands of sources worldwide.</p>
-                    <div class="api-status">
-                        <div class="status-indicator" id="api-status">
-                            <span class="status-dot"></span> API Status: <span class="status-text">Connected</span>
-                        </div>
-                        <div class="storage-status" id="storage-status">
-                            <div class="storage-progress">
-                                <div class="storage-bar" id="storage-bar"></div>
-                            </div>
-                            <span class="storage-text" id="storage-text">0 MB used</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>&copy; 2024 Currents News App. Data provided by <a href="https://currentsapi.services/" target="_blank">Currents News API</a>.</p>
-                <p class="disclaimer">© 2026 Timothy Thumbi. All rights reserved. This application, including its content, layout, and source code, is the exclusive property of Timothy Thumbi and is protected by applicable copyright and intellectual property laws.</p>
-            </div>
+    <!-- Floating Bottom Navigation -->
+    <nav class="bottom-nav">
+        <a href="#" class="nav-item active" data-category="latest" title="Latest">
+            <i class="fas fa-home"></i>
+            <span>Latest</span>
+        </a>
+        <a href="#" class="nav-item" data-category="local" title="Local News">
+            <i class="fas fa-map-marker-alt"></i>
+            <span>Local</span>
+        </a>
+        <a href="#" class="nav-item" data-category="world" title="World">
+            <i class="fas fa-globe"></i>
+            <span>World</span>
+        </a>
+        <a href="#" class="nav-item" data-category="business" title="Business">
+            <i class="fas fa-chart-line"></i>
+            <span>Business</span>
+        </a>
+        <a href="#" class="nav-item" data-category="technology" title="Technology">
+            <i class="fas fa-laptop-code"></i>
+            <span>Tech</span>
+        </a>
+        <a href="#" class="nav-item" data-category="sports" title="Sports">
+            <i class="fas fa-running"></i>
+            <span>Sports</span>
+        </a>
+        <a href="#" class="nav-item" data-category="entertainment" title="Entertainment">
+            <i class="fas fa-film"></i>
+            <span>Ent</span>
+        </a>
+        <a href="#" class="nav-item" id="offline-library-btn" title="Offline Library">
+            <i class="fas fa-download"></i>
+            <span>Offline</span>
+        </a>
+        <div class="nav-menu-more">
+            <a href="#" id="download-offline-link" title="Download">
+                <i class="fas fa-arrow-down"></i>
+                <span>DL</span>
+            </a>
+            <a href="#" id="offline-search-toggle" title="Search Offline">
+                <i class="fas fa-search"></i>
+                <span>Search</span>
+            </a>
+            <select id="language-select" class="nav-select">
+                <option value="en">EN</option>
+                <option value="es">ES</option>
+                <option value="fr">FR</option>
+                <option value="de">DE</option>
+                <option value="it">IT</option>
+                <option value="pt">PT</option>
+            </select>
         </div>
+    </nav>
+
+    <!-- Minimal Footer -->
+    <footer class="footer">
+        <p>&copy; 2026 Currents News. <a href="https://currentsapi.services/" target="_blank">Powered by Currents API</a></p>
     </footer>
 
     <!-- Article Modal -->

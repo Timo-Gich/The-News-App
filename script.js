@@ -291,13 +291,15 @@ class CurrentsNewsApp {
             this.toggleTheme();
         });
 
-        // Navigation category clicks
-        document.querySelectorAll('.nav-link').forEach(link => {
+        // Bottom navigation category clicks
+        document.querySelectorAll('.nav-item').forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
                 const category = e.currentTarget.dataset.category;
-                this.setActiveCategory(category);
-                this.loadCategoryNews(category);
+                if (category) {
+                    this.setActiveCategory(category);
+                    this.loadCategoryNews(category);
+                }
             });
         });
 
@@ -504,32 +506,15 @@ class CurrentsNewsApp {
             this.showOfflineLibrary();
         });
 
-        // Download offline button
-        addIdListener('download-offline-btn', 'click', () => {
+        // Download offline button (new location)
+        addIdListener('download-offline-link', 'click', (e) => {
+            e.preventDefault();
             this.downloadOfflineArticles();
         });
 
         // Load more button
         addIdListener('load-more-btn', 'click', () => {
             this.loadMoreArticles();
-        });
-
-        // Mobile menu toggle
-        addClassListener('.nav-toggle', 'click', () => {
-            const navMenu = document.querySelector('.nav-menu');
-            if (navMenu) {
-                navMenu.classList.toggle('show');
-            }
-        });
-
-        // Close mobile menu when clicking a link
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.addEventListener('click', () => {
-                const navMenu = document.querySelector('.nav-menu');
-                if (navMenu) {
-                    navMenu.classList.remove('show');
-                }
-            });
         });
 
         // PWA Install button
@@ -1147,10 +1132,13 @@ class CurrentsNewsApp {
 
     setActiveCategory(category) {
         this.currentCategory = category;
-        document.querySelectorAll('.nav-link').forEach(link => {
+        document.querySelectorAll('.nav-item').forEach(link => {
             link.classList.remove('active');
         });
-        document.querySelector(`[data-category="${category}"]`).classList.add('active');
+        const activeElement = document.querySelector(`.nav-item[data-category="${category}"]`);
+        if (activeElement) {
+            activeElement.classList.add('active');
+        }
     }
 
     async loadCategoryNews(category) {
