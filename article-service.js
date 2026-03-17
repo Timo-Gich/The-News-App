@@ -61,16 +61,16 @@ class ArticleService {
     async getArticles(params = {}) {
         const {
             page = this.currentPage,
-            category = this.currentCategory,
-            query = this.searchQuery,
-            filters = this.filters
+                category = this.currentCategory,
+                query = this.searchQuery,
+                filters = this.filters
         } = params;
 
         // Update current state
         this.currentPage = page;
         this.currentCategory = category;
         this.searchQuery = query;
-        this.filters = { ...this.filters, ...filters };
+        this.filters = {...this.filters, ...filters };
 
         console.log(`[ArticleService] Getting articles: page=${page}, category=${category}, query=${query ? query.substring(0, 20) + '...' : 'none'}`);
 
@@ -297,6 +297,59 @@ class ArticleService {
 
         // No data available
         throw new Error('No articles available (offline and no cache)');
+    }
+
+    /**
+     * Get local news based on user's location (country)
+     * @param {Object} location - { country, countryCode, latitude, longitude }
+     * @returns {Promise<Object>} - { articles, source, pageNum, isCached }
+     */
+    async getLocalNews(location = {}) {
+        const { countryCode, country } = location;
+
+        if (!countryCode) {
+            console.warn('[ArticleService] No country code provided for local news');
+            return await this.getArticles({ category: 'latest' });
+        }
+
+        // Map country to language for API
+        const language = getLanguageForCountry(countryCode);
+        const originalLanguage = this.currentLanguage;
+
+        try {
+            // Set language for this request
+            this.setLanguage(language);
+
+            // Use keywords with country name for better news relevance
+            const countryName = getCountryName(countryCode) || country;
+            const keywords = countryName;
+
+            console.log(`[ArticleService] Fetching local news for ${countryName} (${language})`);
+
+            // Fetch articles with language and keywords for location filtering
+            const params = {
+                page: 1,
+                category: 'latest',
+                filters: {
+                    keywords: keywords,
+                    ...this.filters
+                }
+            };
+
+            // Get articles (will use cache or API)
+            const response = await this.handleArticleRequest(params);
+
+            return {
+                ...response,
+                location: { country, countryCode }
+            };
+        } catch (error) {
+            console.error('[ArticleService] Local news fetch failed:', error);
+            return await this.getArticles({ category: 'latest' });
+        } finally {
+            // Restore original language
+            this.setLanguage(originalLanguage);
+        }
     }
 }
 

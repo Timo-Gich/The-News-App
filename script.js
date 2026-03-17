@@ -1184,13 +1184,49 @@ class CurrentsNewsApp {
         this.showLoading();
 
         try {
-            // Use ArticleService - the single point of contact for articles
-            const result = await this.articleService.getArticles({
-                page: pageNum,
-                category: category,
-                query: query,
-                filters: filters
-            });
+            // Handle local news (location-based) specially
+            let result;
+            if (category === 'local') {
+                console.log('[UI] Loading local news');
+                
+                // Detect user location
+                const location = await geoService.detectUserLocation();
+                
+                if (location.error) {
+                    console.warn('[UI] Location detection failed:', location.error);
+                    
+                    // Show appropriate error message based on error type
+                    const errorMessages = {
+                        'permission_denied': 'Location permission denied. Showing world news instead.',
+                        'position_unavailable': 'Location not available. Showing world news instead.',
+                        'geolocation_not_supported': 'Geolocation not supported. Showing world news instead.',
+                        'geolocation_timeout': 'Location detection timed out. Showing world news instead.',
+                        'location_unavailable': 'Unable to detect location. Showing world news instead.'
+                    };
+                    const errorMsg = errorMessages[location.error] || 'Unable to detect location. Showing world news instead.';
+                    this.showToast(errorMsg, 'warning');
+                    
+                    // Fallback to latest/world news
+                    result = await this.articleService.getArticles({
+                        page: pageNum,
+                        category: 'latest',
+                        query: query,
+                        filters: filters
+                    });
+                } else {
+                    // Location detected successfully, fetch local news
+                    console.log('[UI] Location detected:', location.country, location.countryCode);
+                    result = await this.articleService.getLocalNews(location);
+                }
+            } else {
+                // Use ArticleService - the single point of contact for articles
+                result = await this.articleService.getArticles({
+                    page: pageNum,
+                    category: category,
+                    query: query,
+                    filters: filters
+                });
+            }
 
             // Store articles and pagination state
             if (append) {
@@ -1222,7 +1258,8 @@ class CurrentsNewsApp {
                                result.source === 'search_api' ? 'search results' :
                                result.source === 'search_cache' ? 'cached search' :
                                result.source === 'search_offline' ? 'offline search' : 'articles';
-            const message = `Loaded ${result.articles.length} articles (${sourceLabel})`;
+            const locationLabel = category === 'local' && result.location ? ` (${result.location.country})` : '';
+            const message = `Loaded ${result.articles.length} articles (${sourceLabel})${locationLabel}`;
             this.showToast(message, result.isCached ? 'warning' : 'success');
 
         } catch (error) {
