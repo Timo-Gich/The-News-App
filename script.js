@@ -157,11 +157,11 @@ class CurrentsNewsApp {
     setTheme(isDarkMode) {
         this.isDarkMode = isDarkMode;
 
-        // Update body class
+        // Update body data-theme attribute
         if (isDarkMode) {
             document.body.setAttribute('data-theme', 'dark');
         } else {
-            document.body.removeAttribute('data-theme');
+            document.body.setAttribute('data-theme', 'light');
         }
 
         // Save preference
