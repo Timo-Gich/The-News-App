@@ -31,7 +31,9 @@
     --transition-smooth: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
+
 /* Dark mode */
+
 [data-theme="dark"] {
     --primary-color: #4f46e5;
     --primary-dark: #3c366b;
@@ -49,6 +51,7 @@
     --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     --card-hover-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
 }
+
 
 /* Light mode for backward compatibility */
 
@@ -712,6 +715,7 @@ h6 {
     margin: 0;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -722,6 +726,7 @@ h6 {
     opacity: 0.95;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     margin: 0;
@@ -904,6 +909,7 @@ h6 {
     color: var(--text-color);
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -915,6 +921,7 @@ h6 {
     color: var(--text-secondary);
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     line-height: 1.4;
