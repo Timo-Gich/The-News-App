@@ -411,18 +411,18 @@
 
                     <div class="form-group">
                         <label for="news-api-key-input">
-                        <i class="fas fa-shield-alt"></i> News API Key (Optional - Fallback)
+                        <i class="fas fa-shield-alt"></i> NewsData.io API Key (Optional - Fallback)
                     </label>
-                        <input type="password" id="news-api-key-input" placeholder="Paste your News API key here (optional)" autocomplete="off">
-                        <small>Optional fallback when Currents quota is exceeded. Get it from <a href="https://thenewsapi.com/" target="_blank">thenewsapi.com</a></small>
+                        <input type="password" id="news-api-key-input" placeholder="Paste your NewsData.io key here (optional)" autocomplete="off">
+                        <small>Optional fallback when Currents quota is exceeded. Get it from <a href="https://newsdata.io/" target="_blank">newsdata.io</a></small>
                     </div>
 
                     <div class="form-group">
                         <label>
                         <input type="checkbox" id="enable-fallback" checked disabled>
-                        <span id="fallback-status-text">Enable fallback to News API when quota is reached</span>
+                        <span id="fallback-status-text">Enable fallback to NewsData.io when quota is reached</span>
                     </label>
-                        <small id="fallback-status-hint" style="display: none; color: var(--warning-color);">Add a News API key to enable this feature</small>
+                        <small id="fallback-status-hint" style="display: none; color: var(--warning-color);">Add a NewsData.io key to enable this feature</small>
                     </div>
 
                     <div class="form-group">
@@ -467,7 +467,7 @@
     <script src="offline-storage.js"></script>
     <script src="cache-controller.js"></script>
     <script src="api-client.js"></script>
-    <script src="news-api-client.js"></script>
+    <script src="news-data-client.js"></script>
     <script src="offline-manager.js"></script>
     <script src="country-language-map.js"></script>
     <script src="geo-service.js"></script>

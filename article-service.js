@@ -3,7 +3,7 @@
 class ArticleService {
     constructor() {
         this.apiClient = null;
-        this.newsApiClient = null;
+        this.newsDataClient = null;
         this.offlineManager = null;
         this.storage = null;
 
@@ -28,9 +28,9 @@ class ArticleService {
     }
 
     // Initialize with dependencies
-    init(apiClient, newsApiClient, offlineManager, storage) {
+    init(apiClient, newsDataClient, offlineManager, storage) {
         this.apiClient = apiClient;
-        this.newsApiClient = newsApiClient;
+        this.newsDataClient = newsDataClient;
         this.offlineManager = offlineManager;
         this.storage = storage;
         console.log('ArticleService initialized');
@@ -58,8 +58,8 @@ class ArticleService {
         if (this.apiClient) {
             this.apiClient.setLanguage(language);
         }
-        if (this.newsApiClient) {
-            this.newsApiClient.setLanguage(language);
+        if (this.newsDataClient) {
+            this.newsDataClient.setLanguage(language);
         }
     }
 
@@ -200,17 +200,16 @@ class ArticleService {
                 const isServerError = error.message.includes('503') || error.message.includes('Service Unavailable');
                 const shouldFallback = (isQuotaError || isServerError);
 
-                // Try fallback to News API if quota exceeded OR server unavailable and fallback is enabled
-                if (shouldFallback && this.fallbackEnabled && this.newsApiClient) {
+                // Try fallback to NewsData.io if quota exceeded OR server unavailable and fallback is enabled
+                if (shouldFallback && this.fallbackEnabled && this.newsDataClient) {
                     const reason = isServerError ? 'Service Unavailable' : 'Quota exceeded';
-                    console.log(`[ArticleService] ${reason} on search, attempting fallback to News API...`);
+                    console.log(`[ArticleService] ${reason} on search, attempting fallback to NewsData.io...`);
 
                     try {
-                        const newsFilters = this.convertFiltersToNewsAPI(filters);
-                        const newsResponse = await this.newsApiClient.searchArticles({ page, query, filters: newsFilters });
+                        const newsResponse = await this.newsDataClient.searchArticles({ page, query, filters });
 
                         if (newsResponse.articles && newsResponse.articles.length > 0) {
-                            console.log(`[ArticleService] Search found ${newsResponse.articles.length} articles from News API (fallback)`);
+                            console.log(`[ArticleService] Search found ${newsResponse.articles.length} articles from NewsData.io (fallback)`);
 
                             // Cache search results
                             await this.storage.cacheSearchResults(query, filters, newsResponse.articles).catch(err =>
@@ -219,7 +218,7 @@ class ArticleService {
 
                             return {
                                 articles: newsResponse.articles,
-                                source: 'search_news_api_fallback',
+                                source: 'search_newsdata_api_fallback',
                                 pageNum: page,
                                 isCached: false,
                                 totalResults: newsResponse.totalResults,
@@ -227,7 +226,7 @@ class ArticleService {
                             };
                         }
                     } catch (fallbackError) {
-                        console.error('[ArticleService] News API search fallback also failed:', fallbackError.message);
+                        console.error('[ArticleService] NewsData.io search fallback also failed:', fallbackError.message);
                         // Continue to offline search below
                     }
                 }
@@ -283,7 +282,7 @@ class ArticleService {
             }
         }
 
-        // Step 2: If online, try primary API (Currents), then fallback to News API if needed
+        // Step 2: If online, try primary API (Currents), then fallback to NewsData.io if needed
         if (this.isOnline && this.apiClient) {
             try {
                 const apiResponse = await this.apiClient.fetchArticles({ page, category, filters });
@@ -314,17 +313,16 @@ class ArticleService {
                 const isServerError = error.message.includes('503') || error.message.includes('Service Unavailable');
                 const shouldFallback = (isQuotaError || isServerError);
 
-                // Try fallback to News API if quota exceeded OR server unavailable and fallback is enabled
-                if (shouldFallback && this.fallbackEnabled && this.newsApiClient) {
+                // Try fallback to NewsData.io if quota exceeded OR server unavailable and fallback is enabled
+                if (shouldFallback && this.fallbackEnabled && this.newsDataClient) {
                     const reason = isServerError ? 'Service Unavailable' : 'Quota exceeded';
-                    console.log(`[ArticleService] ${reason}, attempting fallback to News API...`);
+                    console.log(`[ArticleService] ${reason}, attempting fallback to NewsData.io...`);
 
                     try {
-                        const newsFilters = this.convertFiltersToNewsAPI(filters);
-                        const newsResponse = await this.newsApiClient.fetchArticles({ page, category, filters: newsFilters });
+                        const newsResponse = await this.newsDataClient.fetchArticles({ page, category, filters });
 
                         if (newsResponse.articles && newsResponse.articles.length > 0) {
-                            console.log(`[ArticleService] Fetched ${newsResponse.articles.length} articles from News API (fallback)`);
+                            console.log(`[ArticleService] Fetched ${newsResponse.articles.length} articles from NewsData.io (fallback)`);
 
                             // Cache this page for offline use
                             this.storage.cacheArticlesPage(newsResponse.articles, page, category).catch(err =>
@@ -333,7 +331,7 @@ class ArticleService {
 
                             return {
                                 articles: newsResponse.articles,
-                                source: 'news_api_fallback',
+                                source: 'newsdata_api_fallback',
                                 pageNum: page,
                                 isCached: false,
                                 totalResults: newsResponse.totalResults,
@@ -341,7 +339,7 @@ class ArticleService {
                             };
                         }
                     } catch (fallbackError) {
-                        console.error('[ArticleService] News API fallback also failed:', fallbackError.message);
+                        console.error('[ArticleService] NewsData.io fallback also failed:', fallbackError.message);
                         // Continue to regular fallbacks below
                     }
                 }
@@ -359,7 +357,7 @@ class ArticleService {
                     articles: offlineArticles,
                     source: 'offline',
                     pageNum: page,
-                    isCached: true
+.
                 };
             }
         } catch (error) {
@@ -392,18 +390,6 @@ class ArticleService {
     }
 
     /**
-     * Convert Currents API filter format to News API format
-     */
-    convertFiltersToNewsAPI(currentsFilters) {
-        return {
-            start_date: currentsFilters.start_date,
-            end_date: currentsFilters.end_date,
-            category: currentsFilters.category,
-            domain: currentsFilters.domain
-        };
-    }
-
-    /**
      * Get local news based on user's location (country)
      * @param {Object} location - { country, countryCode, latitude, longitude }
      * @returns {Promise<Object>} - { articles, source, pageNum, isCached }
@@ -416,8 +402,8 @@ class ArticleService {
             return await this.getArticles({ category: 'latest' });
         }
 
-        // Map country code to News API locale
-        const locale = this.newsApiClient ? this.newsApiClient.countryCodeToLocale(countryCode) : null;
+        // Map country code to NewsData.io locale
+        const locale = this.newsDataClient ? this.newsDataClient.countryCodeToLocale(countryCode) : null;
 
         // Map country to language for API
         const language = getLanguageForCountry(countryCode);
@@ -430,17 +416,17 @@ class ArticleService {
             const countryName = getCountryName(countryCode) || country;
             console.log(`[ArticleService] Fetching local news for ${countryName} (${language}, locale: ${locale})`);
 
-            // Try News API first for local news if locale is supported and fallback is enabled
-            if (locale && this.fallbackEnabled && this.newsApiClient && this.isOnline) {
+            // Try NewsData.io first for local news if locale is supported and fallback is enabled
+            if (locale && this.fallbackEnabled && this.newsDataClient && this.isOnline) {
                 try {
-                    console.log(`[ArticleService] Using News API for local news (locale=${locale})`);
-                    const newsResponse = await this.newsApiClient.fetchLocalNews({ page: 1, locale });
+                    console.log(`[ArticleService] Using NewsData.io for local news (locale=${locale})`);
+                    const newsResponse = await this.newsDataClient.fetchLocalNews({ page: 1, locale });
 
                     if (newsResponse.articles && newsResponse.articles.length > 0) {
-                        console.log(`[ArticleService] Fetched ${newsResponse.articles.length} local articles from News API`);
+                        console.log(`[ArticleService] Fetched ${newsResponse.articles.length} local articles from NewsData.io`);
                         return {
                             articles: newsResponse.articles,
-                            source: 'news_api_local',
+                            source: 'newsdata_api_local',
                             location: { country, countryCode },
                             isCached: false,
                             totalResults: newsResponse.totalResults,
@@ -448,7 +434,7 @@ class ArticleService {
                         };
                     }
                 } catch (error) {
-                    console.warn('[ArticleService] News API local news failed, falling back to keyword search:', error.message);
+                    console.warn('[ArticleService] NewsData.io local news failed, falling back to keyword search:', error.message);
                     // Fall through to keyword-based search
                 }
             }
