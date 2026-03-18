@@ -3,6 +3,7 @@
 class ArticleService {
     constructor() {
         this.apiClient = null;
+        this.newsApiClient = null;
         this.offlineManager = null;
         this.storage = null;
 
@@ -12,6 +13,7 @@ class ArticleService {
         this.currentLanguage = 'en';
         this.isOnline = navigator.onLine;
         this.searchQuery = '';
+        this.fallbackEnabled = false;
         this.filters = {
             start_date: '',
             end_date: '',
@@ -26,11 +28,18 @@ class ArticleService {
     }
 
     // Initialize with dependencies
-    init(apiClient, offlineManager, storage) {
+    init(apiClient, newsApiClient, offlineManager, storage) {
         this.apiClient = apiClient;
+        this.newsApiClient = newsApiClient;
         this.offlineManager = offlineManager;
         this.storage = storage;
         console.log('ArticleService initialized');
+    }
+
+    // Enable or disable fallback mechanism
+    setFallbackEnabled(enabled) {
+        this.fallbackEnabled = enabled;
+        console.log(`[ArticleService] Fallback mechanism ${enabled ? 'enabled' : 'disabled'}`);
     }
 
     // ==================== STATE MANAGEMENT ====================
@@ -48,6 +57,9 @@ class ArticleService {
         this.currentLanguage = language;
         if (this.apiClient) {
             this.apiClient.setLanguage(language);
+        }
+        if (this.newsApiClient) {
+            this.newsApiClient.setLanguage(language);
         }
     }
 
@@ -158,7 +170,7 @@ class ArticleService {
             };
         }
 
-        // Step 2: If online, perform API search
+        // Step 2: If online, perform API search with fallback
         if (this.isOnline && this.apiClient) {
             try {
                 console.log(`[ArticleService] Performing API search for "${query}"`);
@@ -168,7 +180,7 @@ class ArticleService {
                     // Cache search results for future use
                     await this.storage.cacheSearchResults(query, filters, apiResponse.articles);
 
-                    console.log(`[ArticleService] Search found ${apiResponse.articles.length} articles from API`);
+                    console.log(`[ArticleService] Search found ${apiResponse.articles.length} articles from Currents API`);
                     return {
                         articles: apiResponse.articles,
                         source: 'search_api',
@@ -179,7 +191,44 @@ class ArticleService {
                     };
                 }
             } catch (error) {
-                console.warn(`[ArticleService] Search API failed: ${error.message}`);
+                console.warn(`[ArticleService] Currents API search failed: ${error.message}`);
+
+                // Check if this is a quota/usage limit error
+                const isQuotaError = error.message.includes('usage_limit') ||
+                    error.message.includes('quota') ||
+                    error.message.includes('402');
+
+                // Try fallback to News API if quota exceeded and fallback is enabled
+                if (isQuotaError && this.fallbackEnabled && this.newsApiClient) {
+                    console.log('[ArticleService] Quota exceeded on search, attempting fallback to News API...');
+
+                    try {
+                        const newsFilters = this.convertFiltersToNewsAPI(filters);
+                        const newsResponse = await this.newsApiClient.searchArticles({ page, query, filters: newsFilters });
+
+                        if (newsResponse.articles && newsResponse.articles.length > 0) {
+                            console.log(`[ArticleService] Search found ${newsResponse.articles.length} articles from News API (fallback)`);
+
+                            // Cache search results
+                            await this.storage.cacheSearchResults(query, filters, newsResponse.articles).catch(err =>
+                                console.warn('[ArticleService] Failed to cache search results:', err)
+                            );
+
+                            return {
+                                articles: newsResponse.articles,
+                                source: 'search_news_api_fallback',
+                                pageNum: page,
+                                isCached: false,
+                                totalResults: newsResponse.totalResults,
+                                hasMore: newsResponse.hasMore
+                            };
+                        }
+                    } catch (fallbackError) {
+                        console.error('[ArticleService] News API search fallback also failed:', fallbackError.message);
+                        // Continue to offline search below
+                    }
+                }
+
                 // Fall through to offline search
             }
         }
@@ -231,7 +280,7 @@ class ArticleService {
             }
         }
 
-        // Step 2: If online, try API
+        // Step 2: If online, try primary API (Currents), then fallback to News API if needed
         if (this.isOnline && this.apiClient) {
             try {
                 const apiResponse = await this.apiClient.fetchArticles({ page, category, filters });
@@ -242,7 +291,7 @@ class ArticleService {
                         console.warn('[ArticleService] Failed to cache page:', err)
                     );
 
-                    console.log(`[ArticleService] Fetched ${apiResponse.articles.length} articles from API`);
+                    console.log(`[ArticleService] Fetched ${apiResponse.articles.length} articles from Currents API`);
                     return {
                         articles: apiResponse.articles,
                         source: 'api',
@@ -253,7 +302,45 @@ class ArticleService {
                     };
                 }
             } catch (error) {
-                console.warn(`[ArticleService] API fetch failed: ${error.message}`);
+                console.warn(`[ArticleService] Currents API fetch failed: ${error.message}`);
+
+                // Check if this is a quota/usage limit error
+                const isQuotaError = error.message.includes('usage_limit') ||
+                    error.message.includes('quota') ||
+                    error.message.includes('402');
+
+                // Try fallback to News API if quota exceeded and fallback is enabled
+                if (isQuotaError && this.fallbackEnabled && this.newsApiClient) {
+                    console.log('[ArticleService] Quota exceeded, attempting fallback to News API...');
+
+                    try {
+                        // Convert Currents filter format to News API format
+                        const newsFilters = this.convertFiltersToNewsAPI(filters);
+                        const newsResponse = await this.newsApiClient.fetchArticles({ page, category, filters: newsFilters });
+
+                        if (newsResponse.articles && newsResponse.articles.length > 0) {
+                            console.log(`[ArticleService] Fetched ${newsResponse.articles.length} articles from News API (fallback)`);
+
+                            // Cache this page for offline use
+                            this.storage.cacheArticlesPage(newsResponse.articles, page, category).catch(err =>
+                                console.warn('[ArticleService] Failed to cache fallback page:', err)
+                            );
+
+                            return {
+                                articles: newsResponse.articles,
+                                source: 'news_api_fallback',
+                                pageNum: page,
+                                isCached: false,
+                                totalResults: newsResponse.totalResults,
+                                hasMore: newsResponse.hasMore
+                            };
+                        }
+                    } catch (fallbackError) {
+                        console.error('[ArticleService] News API fallback also failed:', fallbackError.message);
+                        // Continue to regular fallbacks below
+                    }
+                }
+
                 // Fall through to offline fallback
             }
         }
@@ -300,6 +387,18 @@ class ArticleService {
     }
 
     /**
+     * Convert Currents API filter format to News API format
+     */
+    convertFiltersToNewsAPI(currentsFilters) {
+        return {
+            start_date: currentsFilters.start_date,
+            end_date: currentsFilters.end_date,
+            category: currentsFilters.category,
+            domain: currentsFilters.domain
+        };
+    }
+
+    /**
      * Get local news based on user's location (country)
      * @param {Object} location - { country, countryCode, latitude, longitude }
      * @returns {Promise<Object>} - { articles, source, pageNum, isCached }
@@ -312,6 +411,9 @@ class ArticleService {
             return await this.getArticles({ category: 'latest' });
         }
 
+        // Map country code to News API locale
+        const locale = this.newsApiClient ? this.newsApiClient.countryCodeToLocale(countryCode) : null;
+
         // Map country to language for API
         const language = getLanguageForCountry(countryCode);
         const originalLanguage = this.currentLanguage;
@@ -320,13 +422,34 @@ class ArticleService {
             // Set language for this request
             this.setLanguage(language);
 
-            // Use keywords with country name for better news relevance
             const countryName = getCountryName(countryCode) || country;
+            console.log(`[ArticleService] Fetching local news for ${countryName} (${language}, locale: ${locale})`);
+
+            // Try News API first for local news if locale is supported and fallback is enabled
+            if (locale && this.fallbackEnabled && this.newsApiClient && this.isOnline) {
+                try {
+                    console.log(`[ArticleService] Using News API for local news (locale=${locale})`);
+                    const newsResponse = await this.newsApiClient.fetchLocalNews({ page: 1, locale });
+
+                    if (newsResponse.articles && newsResponse.articles.length > 0) {
+                        console.log(`[ArticleService] Fetched ${newsResponse.articles.length} local articles from News API`);
+                        return {
+                            articles: newsResponse.articles,
+                            source: 'news_api_local',
+                            location: { country, countryCode },
+                            isCached: false,
+                            totalResults: newsResponse.totalResults,
+                            hasMore: newsResponse.hasMore
+                        };
+                    }
+                } catch (error) {
+                    console.warn('[ArticleService] News API local news failed, falling back to keyword search:', error.message);
+                    // Fall through to keyword-based search
+                }
+            }
+
+            // Fallback: Use keywords with country name for Currents API
             const keywords = countryName;
-
-            console.log(`[ArticleService] Fetching local news for ${countryName} (${language})`);
-
-            // Fetch articles with language and keywords for location filtering
             const params = {
                 page: 1,
                 category: 'latest',
@@ -336,7 +459,7 @@ class ArticleService {
                 }
             };
 
-            // Get articles (will use cache or API)
+            // Get articles using standard method (handles all fallback layers)
             const response = await this.handleArticleRequest(params);
 
             return {
