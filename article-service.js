@@ -193,14 +193,17 @@ class ArticleService {
             } catch (error) {
                 console.warn(`[ArticleService] Currents API search failed: ${error.message}`);
 
-                // Check if this is a quota/usage limit error
+                // Check if this is a quota/usage limit error OR server error (503)
                 const isQuotaError = error.message.includes('usage_limit') ||
                     error.message.includes('quota') ||
                     error.message.includes('402');
+                const isServerError = error.message.includes('503') || error.message.includes('Service Unavailable');
+                const shouldFallback = (isQuotaError || isServerError);
 
-                // Try fallback to News API if quota exceeded and fallback is enabled
-                if (isQuotaError && this.fallbackEnabled && this.newsApiClient) {
-                    console.log('[ArticleService] Quota exceeded on search, attempting fallback to News API...');
+                // Try fallback to News API if quota exceeded OR server unavailable and fallback is enabled
+                if (shouldFallback && this.fallbackEnabled && this.newsApiClient) {
+                    const reason = isServerError ? 'Service Unavailable' : 'Quota exceeded';
+                    console.log(`[ArticleService] ${reason} on search, attempting fallback to News API...`);
 
                     try {
                         const newsFilters = this.convertFiltersToNewsAPI(filters);
@@ -304,17 +307,19 @@ class ArticleService {
             } catch (error) {
                 console.warn(`[ArticleService] Currents API fetch failed: ${error.message}`);
 
-                // Check if this is a quota/usage limit error
+                // Check if this is a quota/usage limit error OR server error (503)
                 const isQuotaError = error.message.includes('usage_limit') ||
                     error.message.includes('quota') ||
                     error.message.includes('402');
+                const isServerError = error.message.includes('503') || error.message.includes('Service Unavailable');
+                const shouldFallback = (isQuotaError || isServerError);
 
-                // Try fallback to News API if quota exceeded and fallback is enabled
-                if (isQuotaError && this.fallbackEnabled && this.newsApiClient) {
-                    console.log('[ArticleService] Quota exceeded, attempting fallback to News API...');
+                // Try fallback to News API if quota exceeded OR server unavailable and fallback is enabled
+                if (shouldFallback && this.fallbackEnabled && this.newsApiClient) {
+                    const reason = isServerError ? 'Service Unavailable' : 'Quota exceeded';
+                    console.log(`[ArticleService] ${reason}, attempting fallback to News API...`);
 
                     try {
-                        // Convert Currents filter format to News API format
                         const newsFilters = this.convertFiltersToNewsAPI(filters);
                         const newsResponse = await this.newsApiClient.fetchArticles({ page, category, filters: newsFilters });
 
