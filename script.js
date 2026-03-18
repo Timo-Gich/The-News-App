@@ -5,7 +5,7 @@ class CurrentsNewsApp {
         // Services
         this.articleService = null;
         this.apiClient = null;
-        this.newsDataClient = null;
+        this.newsApiClient = null;
         this.offlineManager = null;
 
         // UI State
@@ -43,17 +43,17 @@ class CurrentsNewsApp {
 
         // Check for saved API keys
         const savedCurrentsKey = localStorage.getItem('currents_api_key');
-        const savedNewsDataKey = localStorage.getItem('newsdata_api_key');
+        const savedNewsKey = localStorage.getItem('news_api_key');
 
         if (savedCurrentsKey) {
             await this.setupAPIClient(savedCurrentsKey);
         }
 
-        if (savedNewsDataKey) {
-            await this.setupNewsDataClient(savedNewsDataKey);
+        if (savedNewsKey) {
+            await this.setupNewsAPIClient(savedNewsKey);
         }
 
-        // Show modal if no Currents API key (Currents is required, NewsData.io is optional)
+        // Show modal if no Currents API key (Currents is required, News API is optional)
         if (savedCurrentsKey) {
             this.hideApiKeyModal();
             await this.loadLatestNews();
@@ -79,7 +79,7 @@ class CurrentsNewsApp {
             // Create service instances
             this.offlineManager = new OfflineManager();
             this.apiClient = new APIClient('https://api.currentsapi.services/v1', null);
-            this.newsDataClient = new NewsDataClient(null);
+            this.newsApiClient = new NewsAPIClient('https://api.thenewsapi.com/v1', null);
             this.articleService = new ArticleService();
 
             // Initialize offline manager first
@@ -88,7 +88,7 @@ class CurrentsNewsApp {
 
             // Connect services
             this.offlineManager.setAPIClient(this.apiClient);
-            this.articleService.init(this.apiClient, this.newsDataClient, this.offlineManager, this.offlineManager.storage);
+            this.articleService.init(this.apiClient, this.newsApiClient, this.offlineManager, this.offlineManager.storage);
 
             // Set up toast function
             this.showToast = this.offlineManager.showToast.bind(this.offlineManager);
@@ -117,13 +117,14 @@ class CurrentsNewsApp {
         }
     }
 
-    async setupNewsDataClient(apiKey) {
-        this.newsDataClient.setAPIConfig({
+    async setupNewsAPIClient(apiKey) {
+        this.newsApiClient.setAPIConfig({
             apiKey: apiKey,
+            baseUrl: 'https://api.thenewsapi.com/v1',
             language: this.currentLanguage
         });
 
-        console.log('[UI] NewsData.io client configured as fallback');
+        console.log('[UI] News API client configured as fallback');
     }
 
     // ==================== GITHUB PAGES ERROR HANDLING ====================
@@ -513,15 +514,15 @@ class CurrentsNewsApp {
             this.saveApiKey();
         });
 
-        // NewsData.io key input - enable/disable fallback checkbox
-        const newsDataApiKeyInput = document.getElementById('news-api-key-input');
-        if (newsDataApiKeyInput) {
-            newsDataApiKeyInput.addEventListener('input', () => {
-                const hasNewsDataKey = newsDataApiKeyInput.value.trim().length > 0;
+        // News API key input - enable/disable fallback checkbox
+        const newsApiKeyInput = document.getElementById('news-api-key-input');
+        if (newsApiKeyInput) {
+            newsApiKeyInput.addEventListener('input', () => {
+                const hasNewsKey = newsApiKeyInput.value.trim().length > 0;
                 const fallbackCheckbox = document.getElementById('enable-fallback');
                 const fallbackStatusHint = document.getElementById('fallback-status-hint');
 
-                if (hasNewsDataKey) {
+                if (hasNewsKey) {
                     fallbackCheckbox.disabled = false;
                     if (fallbackStatusHint) {
                         fallbackStatusHint.style.display = 'none';
@@ -1640,7 +1641,7 @@ class CurrentsNewsApp {
 
     saveApiKey() {
         const currentsApiKey = document.getElementById('api-key-input').value.trim();
-        const newsDataApiKey = document.getElementById('news-api-key-input').value.trim();
+        const newsApiKey = document.getElementById('news-api-key-input').value.trim();
         const saveChecked = document.getElementById('save-api-key').checked;
         const enableFallback = document.getElementById('enable-fallback').checked;
 
@@ -1654,29 +1655,29 @@ class CurrentsNewsApp {
         if (saveChecked) {
             localStorage.setItem('currents_api_key', currentsApiKey);
             
-            // Only save NewsData.io key if provided
-            if (newsDataApiKey) {
-                localStorage.setItem('newsdata_api_key', newsDataApiKey);
+            // Only save News API key if provided
+            if (newsApiKey) {
+                localStorage.setItem('news_api_key', newsApiKey);
                 localStorage.setItem('enable_api_fallback', enableFallback ? 'true' : 'false');
             }
         }
 
         // Configure API clients
         this.setupAPIClient(currentsApiKey);
-        if (newsDataApiKey) {
-            this.setupNewsDataClient(newsDataApiKey);
+        if (newsApiKey) {
+            this.setupNewsAPIClient(newsApiKey);
         }
 
         // Inform ArticleService about fallback status
         if (this.articleService) {
-            this.articleService.setFallbackEnabled(enableFallback && newsDataApiKey);
+            this.articleService.setFallbackEnabled(enableFallback && newsApiKey);
         }
 
         this.hideApiKeyModal();
         this.loadLatestNews();
         
-        const message = newsDataApiKey && enableFallback 
-            ? 'API keys saved! Fallback to NewsData.io enabled.' 
+        const message = newsApiKey && enableFallback 
+            ? 'API keys saved! Fallback enabled.' 
             : 'Currents API key saved successfully';
         this.showToast(message, 'success');
     }
