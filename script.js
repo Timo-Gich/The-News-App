@@ -291,7 +291,67 @@ class CurrentsNewsApp {
             this.toggleTheme();
         });
 
-        // Bottom navigation category clicks
+        // ==================== HAMBURGER MENU TOGGLE ====================
+        // Hamburger menu button
+        addIdListener('hamburger-menu', 'click', () => {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (sidebar && overlay) {
+                sidebar.classList.toggle('show');
+                overlay.classList.toggle('show');
+            }
+        });
+
+        // Close sidebar when overlay is clicked
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', () => {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('sidebar-overlay');
+                if (sidebar && overlay) {
+                    sidebar.classList.remove('show');
+                    overlay.classList.remove('show');
+                }
+            });
+        }
+
+        // Close sidebar when sidebar items are clicked (mobile)
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+
+                // Update active state
+                document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+
+                const category = item.dataset.category;
+
+                // Handle offline library and download buttons differently
+                if (item.id === 'offline-library-btn') {
+                    this.showOfflineLibraryModal();
+                } else if (item.id === 'download-offline-link') {
+                    // Download button logic already handled elsewhere
+                } else if (category) {
+                    this.currentCategory = category;
+                    this.loadCategoryNews(category);
+                }
+
+                // Close sidebar on mobile
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('sidebar-overlay');
+                if (window.innerWidth <= 768 && sidebar && overlay) {
+                    sidebar.classList.remove('show');
+                    overlay.classList.remove('show');
+                }
+            });
+        });
+
+        // ==================== END HAMBURGER MENU ====================
+
+        // Bottom navigation category clicks (updated to use sidebar)
+        // Note: Sidebar navigation is handled at the end of hamburger menu section above
+
+        // For backward compatibility, also handle nav-item elements if they exist
         document.querySelectorAll('.nav-item').forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -1132,12 +1192,27 @@ class CurrentsNewsApp {
 
     setActiveCategory(category) {
         this.currentCategory = category;
+        
+        // Remove active from nav items (old bottom nav, if present)
         document.querySelectorAll('.nav-item').forEach(link => {
             link.classList.remove('active');
         });
-        const activeElement = document.querySelector(`.nav-item[data-category="${category}"]`);
-        if (activeElement) {
-            activeElement.classList.add('active');
+        
+        // Remove active from sidebar items (new sidebar nav)
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        
+        // Set active on nav-item
+        const activeNavElement = document.querySelector(`.nav-item[data-category="${category}"]`);
+        if (activeNavElement) {
+            activeNavElement.classList.add('active');
+        }
+        
+        // Set active on sidebar-item
+        const activeSidebarElement = document.querySelector(`.sidebar-item[data-category="${category}"]`);
+        if (activeSidebarElement) {
+            activeSidebarElement.classList.add('active');
         }
     }
 
@@ -1304,7 +1379,6 @@ class CurrentsNewsApp {
         const container = document.getElementById('news-grid');
         if (!container) return;
 
-        // FIX 2: Stop slicing already-paged data - fetchArticles() already returns one page
         const articlesToRender = articles || this.articles;
 
         if (!append) {
@@ -1324,12 +1398,51 @@ class CurrentsNewsApp {
             return;
         }
 
-        articlesToRender.forEach(article => {
-            const card = this.createArticleCard(article);
-            container.appendChild(card);
-        });
+        // Display featured article on first page only
+        if (!append && articlesToRender.length > 0 && this.currentPage === 1) {
+            const featuredArticle = articlesToRender[0];
+            this.displayFeaturedArticle(featuredArticle);
+            
+            // Render only remaining articles in grid (skip first one as it's featured)
+            articlesToRender.slice(1).forEach(article => {
+                const card = this.createArticleCard(article);
+                container.appendChild(card);
+            });
+        } else {
+            // Normal render for pagination or append mode
+            articlesToRender.forEach(article => {
+                const card = this.createArticleCard(article);
+                container.appendChild(card);
+            });
+        }
 
         this.updatePagination();
+    }
+
+    displayFeaturedArticle(article) {
+        const featuredSection = document.getElementById('featured-article');
+        if (!featuredSection) return;
+
+        const imageUrl = article.image || '';
+        const category = article.category || 'General';
+        const title = article.title || 'Untitled';
+        const description = article.description || '';
+        const source = article.source || 'Unknown Source';
+        const date = article.published ? new Date(article.published).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+
+        // Set featured article content
+        document.getElementById('featured-image').src = imageUrl;
+        document.getElementById('featured-title').textContent = title;
+        document.getElementById('featured-description').textContent = description;
+        document.getElementById('featured-category').textContent = category.toUpperCase();
+        document.getElementById('featured-source').textContent = source;
+        document.getElementById('featured-date').textContent = date;
+
+        // Make featured section clickable to open article modal
+        featuredSection.style.display = 'block';
+        featuredSection.onclick = () => {
+            this.showArticleModal(article);
+        };
     }
 
     // Clean pagination - shows Prev/Next buttons

@@ -25,11 +25,36 @@
 </head>
 
 <body>
-    <!-- Minimal Header -->
+    <!-- Top Header with 3 Zones: Logo | Search | Profile -->
     <header class="header">
         <div class="header-content">
-            <h1 class="app-title">Currents News</h1>
-            <div class="header-icons">
+            <!-- Left Zone: Logo + Hamburger Menu -->
+            <div class="header-left">
+                <button class="hamburger-menu" id="hamburger-menu" title="Menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="logo">
+                    <i class="fas fa-newspaper"></i>
+                    <span>Currents News</span>
+                </div>
+            </div>
+
+            <!-- Center Zone: Search Bar -->
+            <div class="header-center">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="search-input" placeholder="Search news...">
+                </div>
+                <button id="advanced-toggle" class="search-btn-icon" title="Filters">
+                    <i class="fas fa-sliders-h"></i>
+                </button>
+            </div>
+
+            <!-- Right Zone: Profile & Settings -->
+            <div class="header-right">
+                <button class="icon-btn" title="Notifications" id="notifications-btn">
+                    <i class="fas fa-bell"></i>
+                </button>
                 <button class="theme-toggle" title="Toggle dark mode">
                     <i class="fas fa-moon"></i>
                 </button>
@@ -40,21 +65,8 @@
         </div>
     </header>
 
-    <!-- Search & Filter Section -->
-    <section class="search-section">
-        <div class="search-container">
-            <div class="search-box">
-                <i class="fas fa-search"></i>
-                <input type="text" id="search-input" placeholder="Search news...">
-            </div>
-            <button id="search-btn" class="search-btn-icon" title="Search">
-                <i class="fas fa-arrow-right"></i>
-            </button>
-            <button id="advanced-toggle" class="search-btn-icon" title="Filters">
-                <i class="fas fa-sliders-h"></i>
-            </button>
-        </div>
-
+    <!-- Advanced Filters Section (Collapsible) -->
+    <section class="advanced-filters-wrapper">
         <div class="advanced-filters" id="advanced-filters">
             <div class="filter-row">
                 <div class="filter-group">
@@ -93,146 +105,155 @@
                     </button>
             </div>
         </div>
-        </div>
     </section>
 
-    <!-- Main Content -->
-    <main class="main">
-        <div class="container">
-            <!-- Loading Indicator -->
-            <div class="loading" id="loading">
-                <div class="loading-spinner">
-                    <i class="fas fa-newspaper fa-spin"></i>
-                </div>
-                <p>Loading news from around the world...</p>
-            </div>
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar">
+        <nav class="sidebar-nav">
+            <a href="#" class="sidebar-item active" data-category="latest" title="Latest">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+            <a href="#" class="sidebar-item" data-category="world" title="World">
+                <i class="fas fa-globe"></i>
+                <span>General</span>
+            </a>
+            <a href="#" class="sidebar-item" data-category="technology" title="Technology">
+                <i class="fas fa-laptop-code"></i>
+                <span>Tech</span>
+            </a>
+            <a href="#" class="sidebar-item" data-category="business" title="Business">
+                <i class="fas fa-briefcase"></i>
+                <span>Business</span>
+            </a>
+            <a href="#" class="sidebar-item" data-category="sports" title="Sports">
+                <i class="fas fa-running"></i>
+                <span>Sports</span>
+            </a>
+            <a href="#" class="sidebar-item" data-category="health" title="Health">
+                <i class="fas fa-heart"></i>
+                <span>Health</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <a href="#" id="offline-library-btn" class="sidebar-item" title="Offline Library">
+                <i class="fas fa-database"></i>
+                <span>Offline</span>
+            </a>
+            <a href="#" id="download-offline-link" class="sidebar-item" title="Download">
+                <i class="fas fa-download"></i>
+                <span>Download</span>
+            </a>
+        </div>
+    </aside>
 
-            <!-- Error Display -->
-            <div class="error-container" id="error-container" style="display: none;">
-                <div class="error-icon">
-                    <i class="fas fa-exclamation-triangle"></i>
-                </div>
-                <h3>Unable to Load News</h3>
-                <p id="error-message">There was an error loading the news. Please try again later.</p>
-                <button id="retry-btn" class="btn btn-primary">
-                    <i class="fas fa-redo"></i> Retry
-                </button>
-                <button id="use-offline-btn" class="btn btn-secondary">
-                    <i class="fas fa-database"></i> Use Offline Articles
-                </button>
-            </div>
+    <!-- Sidebar Overlay (Mobile) -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
-            <!-- News Grid -->
-            <div class="news-grid" id="news-grid">
-                <!-- Articles will be inserted here by JavaScript -->
-            </div>
-
-            <!-- Pagination -->
-            <div class="pagination" id="pagination">
-                <button id="prev-page" class="btn btn-secondary" style="display: none;">
-                    <i class="fas fa-chevron-left"></i> Previous
-                </button>
-                <div class="page-info" id="page-info">
-                    Page <span id="current-page">1</span>
-                </div>
-                <button id="next-page" class="btn btn-secondary" style="display: none;">
-                    Next <i class="fas fa-chevron-right"></i>
-                </button>
-                <button id="load-more-btn" class="btn btn-secondary" style="display: none;">
-                    <i class="fas fa-plus"></i> Load More Articles
-                </button>
-            </div>
-
-            <!-- Download Progress Container -->
-            <div id="download-progress-container" style="display: none; margin: 20px 0;">
-                <div class="progress-container">
-                    <div class="progress-header">
-                        <span class="progress-text">Downloading...</span>
-                        <span class="progress-count">0/0</span>
+    <!-- Main Content Container (Sidebar + Main) -->
+    <div class="content-wrapper">
+        <main class="main">
+            <div class="main-inner">
+                <!-- Loading Indicator -->
+                <div class="loading" id="loading">
+                    <div class="loading-spinner">
+                        <i class="fas fa-newspaper fa-spin"></i>
                     </div>
-                    <div class="progress-bar">
-                        <div class="progress-bar-fill"></div>
-                    </div>
+                    <p>Loading news from around the world...</p>
                 </div>
-            </div>
 
-            <!-- Historical Search Section -->
-            <div class="historical-section">
-                <h2><i class="fas fa-history"></i> Historical News Search</h2>
-                <p>Search through historical news articles with advanced filtering options.</p>
-                <div class="historical-form">
-                    <input type="text" id="historical-search" placeholder="Enter keywords (e.g., Amazon, AI, Climate Change)">
-                    <div class="historical-dates">
-                        <div class="date-group">
-                            <label for="historical-start-date"><i class="far fa-calendar-alt"></i> Start Date</label>
-                            <input type="date" id="historical-start-date">
-                        </div>
-                        <div class="date-group">
-                            <label for="historical-end-date"><i class="far fa-calendar-alt"></i> End Date</label>
-                            <input type="date" id="historical-end-date">
-                        </div>
+                <!-- Error Display -->
+                <div class="error-container" id="error-container" style="display: none;">
+                    <div class="error-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
                     </div>
-                    <button id="historical-search-btn" class="btn btn-primary">
-                        <i class="fas fa-search"></i> Search History
+                    <h3>Unable to Load News</h3>
+                    <p id="error-message">There was an error loading the news. Please try again later.</p>
+                    <button id="retry-btn" class="btn btn-primary">
+                        <i class="fas fa-redo"></i> Retry
+                    </button>
+                    <button id="use-offline-btn" class="btn btn-secondary">
+                        <i class="fas fa-database"></i> Use Offline Articles
                     </button>
                 </div>
-            </div>
-        </div>
-    </main>
 
-    <!-- Floating Bottom Navigation -->
-    <nav class="bottom-nav">
-        <a href="#" class="nav-item active" data-category="latest" title="Latest">
-            <i class="fas fa-home"></i>
-            <span>Latest</span>
-        </a>
-        <a href="#" class="nav-item" data-category="local" title="Local News">
-            <i class="fas fa-map-marker-alt"></i>
-            <span>Local</span>
-        </a>
-        <a href="#" class="nav-item" data-category="world" title="World">
-            <i class="fas fa-globe"></i>
-            <span>World</span>
-        </a>
-        <a href="#" class="nav-item" data-category="business" title="Business">
-            <i class="fas fa-chart-line"></i>
-            <span>Business</span>
-        </a>
-        <a href="#" class="nav-item" data-category="technology" title="Technology">
-            <i class="fas fa-laptop-code"></i>
-            <span>Tech</span>
-        </a>
-        <a href="#" class="nav-item" data-category="sports" title="Sports">
-            <i class="fas fa-running"></i>
-            <span>Sports</span>
-        </a>
-        <a href="#" class="nav-item" data-category="entertainment" title="Entertainment">
-            <i class="fas fa-film"></i>
-            <span>Ent</span>
-        </a>
-        <a href="#" class="nav-item" id="offline-library-btn" title="Offline Library">
-            <i class="fas fa-download"></i>
-            <span>Offline</span>
-        </a>
-        <div class="nav-menu-more">
-            <a href="#" id="download-offline-link" title="Download">
-                <i class="fas fa-arrow-down"></i>
-                <span>DL</span>
-            </a>
-            <a href="#" id="offline-search-toggle" title="Search Offline">
-                <i class="fas fa-search"></i>
-                <span>Search</span>
-            </a>
-            <select id="language-select" class="nav-select">
-                <option value="en">EN</option>
-                <option value="es">ES</option>
-                <option value="fr">FR</option>
-                <option value="de">DE</option>
-                <option value="it">IT</option>
-                <option value="pt">PT</option>
-            </select>
-        </div>
-    </nav>
+                <!-- Featured Article Section -->
+                <section class="featured-article" id="featured-article" style="display: none;">
+                    <div class="featured-container">
+                        <div class="featured-image-wrapper">
+                            <img id="featured-image" src="" alt="Featured Article" class="featured-image">
+                            <div class="featured-overlay"></div>
+                        </div>
+                        <div class="featured-content">
+                            <div class="featured-category" id="featured-category"></div>
+                            <h2 id="featured-title" class="featured-title"></h2>
+                            <p id="featured-description" class="featured-description"></p>
+                            <div class="featured-meta">
+                                <span class="featured-source" id="featured-source"></span>
+                                <span class="featured-date" id="featured-date"></span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- News Grid -->
+                <div class="news-grid" id="news-grid">
+                    <!-- Articles will be inserted here by JavaScript -->
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination" id="pagination">
+                    <button id="prev-page" class="btn btn-secondary" style="display: none;">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                    <div class="page-info" id="page-info">
+                        Page <span id="current-page">1</span>
+                    </div>
+                    <button id="next-page" class="btn btn-secondary" style="display: none;">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <button id="load-more-btn" class="btn btn-secondary" style="display: none;">
+                        <i class="fas fa-plus"></i> Load More Articles
+                    </button>
+                </div>
+
+                <!-- Download Progress Container -->
+                <div id="download-progress-container" style="display: none; margin: 20px 0;">
+                    <div class="progress-container">
+                        <div class="progress-header">
+                            <span class="progress-text">Downloading...</span>
+                            <span class="progress-count">0/0</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Historical Search Section -->
+                <div class="historical-section">
+                    <h2><i class="fas fa-history"></i> Historical News Search</h2>
+                    <p>Search through historical news articles with advanced filtering options.</p>
+                    <div class="historical-form">
+                        <input type="text" id="historical-search" placeholder="Enter keywords (e.g., Amazon, AI, Climate Change)">
+                        <div class="historical-dates">
+                            <div class="date-group">
+                                <label for="historical-start-date"><i class="far fa-calendar-alt"></i> Start Date</label>
+                                <input type="date" id="historical-start-date">
+                            </div>
+                            <div class="date-group">
+                                <label for="historical-end-date"><i class="far fa-calendar-alt"></i> End Date</label>
+                                <input type="date" id="historical-end-date">
+                            </div>
+                        </div>
+                        <button id="historical-search-btn" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Search History
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
 
     <!-- Minimal Footer -->
     <footer class="footer">
