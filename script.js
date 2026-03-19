@@ -241,10 +241,15 @@ class CurrentsNewsApp {
             console.log('Invalid URL:', article.url);
         }
 
-        // Get categories
-        const categories = article.category && article.category.length > 0 ?
-            article.category.join(', ') :
-            'General';
+        // Get categories - handle both string and array
+        let categories = 'General';
+        if (article.category) {
+            if (Array.isArray(article.category)) {
+                categories = article.category.length > 0 ? article.category.join(', ') : 'General';
+            } else if (typeof article.category === 'string') {
+                categories = article.category;
+            }
+        }
 
         // Update modal content
         document.getElementById('modal-title').textContent = article.title;
@@ -943,9 +948,14 @@ class CurrentsNewsApp {
         }
 
         // Get first category or default
-        const category = article.category && article.category.length > 0 ?
-            article.category[0] :
-            'general';
+        let category = 'general';
+        if (article.category) {
+            if (Array.isArray(article.category)) {
+                category = article.category.length > 0 ? article.category[0] : 'general';
+            } else if (typeof article.category === 'string') {
+                category = article.category;
+            }
+        }
 
         // Check if image is available
         const hasImage = article.image && article.image !== "None";
@@ -1376,15 +1386,22 @@ class CurrentsNewsApp {
             console.error('Failed to load news:', error);
             this.hideLoading();
 
+            // Check if this is an API key configuration error
+            if (error.code === 'NO_API_KEY' || error.message.includes('API key not configured')) {
+                this.showApiKeyModal();
+                this.showError('Currents API key required. Please configure your API key to load articles.');
+                this.isFetching = false;
+                return;
+            }
+
             // Guard: only show error if no existing content
             if (this.articles && this.articles.length > 0) {
                 this.showToast(`Network issue. Showing existing results.`, 'warning');
+                this.isFetching = false;
                 return;
             }
 
             this.showError(`Failed to load news: ${error.message}`);
-        } finally {
-            // CRITICAL: Always reset the fetch lock
             this.isFetching = false;
         }
     }
@@ -1471,7 +1488,14 @@ class CurrentsNewsApp {
         if (!featuredSection) return;
 
         const imageUrl = article.image || '';
-        const category = article.category || 'General';
+        // Handle category - could be string or array from API
+        let category = article.category || 'General';
+        if (Array.isArray(category)) {
+            category = category[0] || 'General';
+        }
+        if (typeof category !== 'string') {
+            category = String(category);
+        }
         const title = article.title || 'Untitled';
         const description = article.description || '';
         const source = article.source || 'Unknown Source';

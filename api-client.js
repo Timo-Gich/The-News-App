@@ -31,29 +31,18 @@ class APIClient {
 
     // ==================== MAIN API METHODS ====================
 
-    /**
-     * Fetch articles from API
-     * @param {Object} params - { page, category, filters }
-     * @returns {Promise<Object>} - { articles, totalResults, hasMore }
-     */
-    async fetchArticles(params = {}) {
-        const { page = 1, category = 'latest', filters = {} } = params;
-
-        if (!this.apiKey) {
-            throw new Error('API key not configured');
-        }
-
-        const url = this.buildLatestNewsUrl(page, category, filters);
-        console.log(`[APIClient] Fetching articles: ${url}`);
-
-        const data = await this.makeRequest(url);
-        return {
-            articles: data.news || [],
-            totalResults: data.totalResults || data.total || 0,
-            page: data.page || page,
-            hasMore: data.hasMore || false
-        };
-    }
+    /**\n     * Fetch articles from API\n     * @param {Object} params - { page, category, filters }\n     * @returns {Promise<Object>} - { articles, totalResults, hasMore }\n     */
+    \
+    n async fetchArticles(params = {}) {\ n const { page = 1, category = 'latest', filters = {} } = params;\
+        n\ n if (!this.apiKey) {\ n const error = new Error('Currents API key not configured');\
+            n error.code = 'NO_API_KEY';\
+            n throw error;\
+            n }\
+        n\ n const url = this.buildLatestNewsUrl(page, category, filters);\
+        n console.log(`[APIClient] Fetching articles from Currents API: page=${page}, category=${category}`);\
+        n\ n const data = await this.makeRequest(url);\
+        n return {\ n articles: data.news || [], \n totalResults: data.totalResults || data.total || 0, \n page: data.page || page, \n hasMore: data.hasMore || false\ n };\
+        n }
 
     /**
      * Search articles via API
@@ -64,7 +53,9 @@ class APIClient {
         const { page = 1, query, filters = {} } = params;
 
         if (!this.apiKey) {
-            throw new Error('API key not configured');
+            const error = new Error('Currents API key not configured');
+            error.code = 'NO_API_KEY';
+            throw error;
         }
 
         if (!query || !query.trim()) {
@@ -72,7 +63,7 @@ class APIClient {
         }
 
         const url = this.buildSearchUrl(page, query, filters);
-        console.log(`[APIClient] Searching articles: ${url}`);
+        console.log(`[APIClient] Searching articles via Currents API: query="${query}"`);
 
         const data = await this.makeRequest(url);
         return {

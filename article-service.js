@@ -155,6 +155,7 @@ class ArticleService {
 
     /**
      * Handle search requests (online + offline fallback)
+     * CURRENTS API IS PRIMARY - only fallback to News API for quota/server errors
      */
     async handleSearchRequest({ page, query, filters }) {
         // Step 1: Try cached search results first
@@ -170,10 +171,10 @@ class ArticleService {
             };
         }
 
-        // Step 2: If online, perform API search with fallback
+        // Step 2: If online, perform API search with Currents as PRIMARY
         if (this.isOnline && this.apiClient) {
             try {
-                console.log(`[ArticleService] Performing API search for "${query}"`);
+                console.log(`[ArticleService] Performing search via Currents API for "${query}"`);
                 const apiResponse = await this.apiClient.searchArticles({ page, query, filters });
 
                 if (apiResponse.articles && apiResponse.articles.length > 0) {
@@ -183,27 +184,45 @@ class ArticleService {
                     console.log(`[ArticleService] Search found ${apiResponse.articles.length} articles from Currents API`);
                     return {
                         articles: apiResponse.articles,
-                        source: 'search_api',
+                        source: 'currents_search',
                         pageNum: page,
                         isCached: false,
                         totalResults: apiResponse.totalResults,
                         hasMore: apiResponse.hasMore
                     };
+                } else {
+                    // Empty results from Currents API search - don't fallback
+                    console.warn(`[ArticleService] Currents API search returned no results for: "${query}"`);
+                    return {
+                        articles: [],
+                        source: 'currents_search_empty',
+                        pageNum: page,
+                        isCached: false,
+                        totalResults: 0,
+                        hasMore: false
+                    };
                 }
             } catch (error) {
                 console.warn(`[ArticleService] Currents API search failed: ${error.message}`);
 
-                // Check if this is a quota/usage limit error OR server error (503)
+                // Check if this is a NO_API_KEY error - if so, re-throw immediately without fallback
+                if (error.code === 'NO_API_KEY') {
+                    console.error(`[ArticleService] Currents API key not configured - cannot continue`);
+                    throw error; // Re-throw so UI knows API key is missing
+                }
+
+                // IMPORTANT: Only fallback for quota/server errors, NOT for generic failures
                 const isQuotaError = error.message.includes('usage_limit') ||
                     error.message.includes('quota') ||
-                    error.message.includes('402');
+                    error.message.includes('402') ||
+                    error.message.includes('Rate limit');
                 const isServerError = error.message.includes('503') || error.message.includes('Service Unavailable');
                 const shouldFallback = (isQuotaError || isServerError);
 
-                // Try fallback to News API if quota exceeded OR server unavailable and fallback is enabled
+                // ONLY fallback to News API for quota/server errors when explicitly enabled
                 if (shouldFallback && this.fallbackEnabled && this.newsApiClient) {
                     const reason = isServerError ? 'Service Unavailable' : 'Quota exceeded';
-                    console.log(`[ArticleService] ${reason} on search, attempting fallback to News API...`);
+                    console.log(`[ArticleService] ${reason} on Currents API search, attempting fallback to News API...`);
 
                     try {
                         const newsFilters = this.convertFiltersToNewsAPI(filters);
@@ -230,10 +249,15 @@ class ArticleService {
                         console.error('[ArticleService] News API search fallback also failed:', fallbackError.message);
                         // Continue to offline search below
                     }
+                } else if (!isQuotaError && !isServerError) {
+                    // For non-quota/server errors, report without fallback
+                    console.error(`[ArticleService] Currents API search error (${error.message}) - not attempting fallback`);
                 }
 
                 // Fall through to offline search
             }
+        } else if (!this.apiClient) {
+            console.error('[ArticleService] Currents API client not initialized');
         }
 
         // Step 3: Offline search fallback
@@ -267,6 +291,7 @@ class ArticleService {
 
     /**
      * Handle standard article requests (latest, categories)
+     * CURRENTS API IS PRIMARY - only fallback to News API for quota/server errors
      */
     async handleArticleRequest({ page, category, filters }) {
         // Step 1: Try to get cached page first (if offline or as fallback)
@@ -283,7 +308,7 @@ class ArticleService {
             }
         }
 
-        // Step 2: If online, try primary API (Currents), then fallback to News API if needed
+        // Step 2: If online, try primary API (Currents) - THIS IS PRIMARY
         if (this.isOnline && this.apiClient) {
             try {
                 const apiResponse = await this.apiClient.fetchArticles({ page, category, filters });
@@ -297,27 +322,45 @@ class ArticleService {
                     console.log(`[ArticleService] Fetched ${apiResponse.articles.length} articles from Currents API`);
                     return {
                         articles: apiResponse.articles,
-                        source: 'api',
+                        source: 'currents_api',
                         pageNum: page,
                         isCached: false,
                         totalResults: apiResponse.totalResults,
                         hasMore: apiResponse.hasMore
                     };
+                } else {
+                    // Empty response from Currents API - don't fallback, report empty results
+                    console.warn(`[ArticleService] Currents API returned empty results for category: ${category}`);
+                    return {
+                        articles: [],
+                        source: 'currents_api_empty',
+                        pageNum: page,
+                        isCached: false,
+                        totalResults: 0,
+                        hasMore: false
+                    };
                 }
             } catch (error) {
                 console.warn(`[ArticleService] Currents API fetch failed: ${error.message}`);
 
-                // Check if this is a quota/usage limit error OR server error (503)
+                // Check if this is a NO_API_KEY error - if so, re-throw immediately without fallback
+                if (error.code === 'NO_API_KEY') {
+                    console.error(`[ArticleService] Currents API key not configured - cannot continue`);
+                    throw error; // Re-throw so UI knows API key is missing
+                }
+
+                // IMPORTANT: Only fallback for specific server/quota errors, NOT for generic failures
                 const isQuotaError = error.message.includes('usage_limit') ||
                     error.message.includes('quota') ||
-                    error.message.includes('402');
+                    error.message.includes('402') ||
+                    error.message.includes('Rate limit');
                 const isServerError = error.message.includes('503') || error.message.includes('Service Unavailable');
                 const shouldFallback = (isQuotaError || isServerError);
 
-                // Try fallback to News API if quota exceeded OR server unavailable and fallback is enabled
+                // ONLY try fallback to News API for quota/server errors, and only if explicitly enabled
                 if (shouldFallback && this.fallbackEnabled && this.newsApiClient) {
                     const reason = isServerError ? 'Service Unavailable' : 'Quota exceeded';
-                    console.log(`[ArticleService] ${reason}, attempting fallback to News API...`);
+                    console.log(`[ArticleService] ${reason} on Currents API, attempting fallback to News API...`);
 
                     try {
                         const newsFilters = this.convertFiltersToNewsAPI(filters);
@@ -344,10 +387,15 @@ class ArticleService {
                         console.error('[ArticleService] News API fallback also failed:', fallbackError.message);
                         // Continue to regular fallbacks below
                     }
+                } else if (!isQuotaError && !isServerError) {
+                    // For non-quota/server errors, log and report to user
+                    console.error(`[ArticleService] Currents API error (${error.message}) - not attempting fallback`);
                 }
 
                 // Fall through to offline fallback
             }
+        } else if (!this.apiClient) {
+            console.error('[ArticleService] Currents API client not initialized');
         }
 
         // Step 3: Fallback: Try IndexedDB (all saved articles)
