@@ -943,3 +943,5 @@ class OfflineStorage {
         }
     }
 }
+
+window.OfflineStorage = OfflineStorage;

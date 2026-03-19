@@ -424,3 +424,5 @@ class CacheController {
         }
     }
 }
+
+window.CacheController = CacheController;

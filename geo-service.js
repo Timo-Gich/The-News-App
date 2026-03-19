@@ -317,3 +317,6 @@ class GeoService {
 
 // Create global instance
 const geoService = new GeoService();
+
+// Export for use in other modules
+window.GeoService = GeoService;

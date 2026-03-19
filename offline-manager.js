@@ -831,3 +831,5 @@ class OfflineManager {
 
     // ===== END OF OFFLINEMANAGER =====
 }
+
+window.OfflineManager = OfflineManager;
