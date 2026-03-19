@@ -834,7 +834,7 @@ class OfflineStorage {
 
         // Estimate size based on article properties
         // Assuming ~400KB per article (text + potential images)
-        const avgArticleSize = 400 * 1024; 
+        const avgArticleSize = 400 * 1024;
         const totalSizeBytes = articles.length * avgArticleSize;
         return totalSizeBytes / (1024 * 1024); // Convert to MB
     }
