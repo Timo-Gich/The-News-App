@@ -25,6 +25,10 @@ class CurrentsNewsApp {
         // Fetch lock to prevent concurrent API calls
         this.isFetching = false;
 
+        // API Configuration
+        this.apiKey = null;
+        this.baseUrl = 'https://api.currentsapi.services/v1';
+
         // UI elements
         this.isDarkMode = localStorage.getItem('darkMode') === 'true';
         this.deferredPrompt = null;
@@ -1414,9 +1418,26 @@ class CurrentsNewsApp {
             url += `&apiKey=${this.apiKey}`;
         }
         
+        // Map categories to Currents API format
+        const categoryMap = {
+            'latest': 'latest',
+            'world': 'world',
+            'politics': 'politics',
+            'business': 'business',
+            'technology': 'technology',
+            'tech': 'technology',
+            'sports': 'sports',
+            'entertainment': 'entertainment',
+            'science': 'science',
+            'health': 'health',
+            'local': 'latest' // Local news handled separately
+        };
+        
+        const mappedCategory = categoryMap[category] || 'latest';
+        
         // Add category if not 'latest'
-        if (category && category !== 'latest') {
-            url += `&category=${encodeURIComponent(category)}`;
+        if (mappedCategory !== 'latest') {
+            url += `&category=${encodeURIComponent(mappedCategory)}`;
         }
         
         // Add date range for historical news
