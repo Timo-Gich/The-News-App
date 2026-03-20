@@ -99,10 +99,8 @@ class CurrentsNewsApp {
             // Update stats
             await this.offlineManager.updateStats();
 
-            console.log('All services initialized successfully');
         } catch (error) {
-            console.error('Service initialization failed:', error);
-            this.showToast('Failed to initialize services. Please refresh the page.', 'error');
+            console.warn('Service initialization failed:', error);
         }
     }
 
@@ -351,6 +349,10 @@ class CurrentsNewsApp {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
 
+                // Update active state
+                document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+
                 const category = item.dataset.category;
 
                 // Handle offline library and download buttons differently
@@ -359,8 +361,7 @@ class CurrentsNewsApp {
                 } else if (item.id === 'download-offline-link') {
                     // Download button logic already handled elsewhere
                 } else if (category) {
-                    // Let setActiveCategory and loadCategoryNews handle the active state
-                    this.setActiveCategory(category);
+                    this.currentCategory = category;
                     this.loadCategoryNews(category);
                 }
 
@@ -1273,39 +1274,15 @@ class CurrentsNewsApp {
     }
 
     async loadCategoryNews(category) {
-        console.log(`[UI] Loading category: ${category}`);
-        
         this.currentCategory = category;
         this.currentPage = 1;
         this.searchQuery = '';
 
-        try {
-            await this.loadNews({
-                source: 'category',
-                category: category,
-                pageNum: 1
-            });
-            
-            // Add user feedback
-            const categoryNames = {
-                'latest': 'Latest',
-                'world': 'World',
-                'politics': 'Politics',
-                'local': 'Local',
-                'entertainment': 'Entertainment',
-                'technology': 'Technology',
-                'business': 'Business',
-                'sports': 'Sports',
-                'health': 'Health'
-            };
-            
-            const displayName = categoryNames[category] || category;
-            this.showToast(`Loading ${displayName} news...`, 'info');
-            
-        } catch (error) {
-            console.error(`Failed to load ${category} category:`, error);
-            this.showToast(`Failed to load ${category} news. Please try again.`, 'error');
-        }
+        await this.loadNews({
+            source: 'category',
+            category: category,
+            pageNum: 1
+        });
     }
 
     async loadNews(params = {}, append = false) {
@@ -1576,84 +1553,18 @@ class CurrentsNewsApp {
     }
 
     updateDateFilters() {
+        // This method needs to be implemented
         // Set up date filters UI
-        const startDateInput = document.getElementById('start-date');
-        const endDateInput = document.getElementById('end-date');
-        const historicalStartDate = document.getElementById('historical-start-date');
-        const historicalEndDate = document.getElementById('historical-end-date');
-
-        if (startDateInput) {
-            startDateInput.max = new Date().toISOString().split('T')[0];
-        }
-        if (endDateInput) {
-            endDateInput.max = new Date().toISOString().split('T')[0];
-        }
-        if (historicalStartDate) {
-            historicalStartDate.max = new Date().toISOString().split('T')[0];
-        }
-        if (historicalEndDate) {
-            historicalEndDate.max = new Date().toISOString().split('T')[0];
-        }
     }
 
     applyFilters() {
-        // Apply filters to the current search
-        const startDateInput = document.getElementById('start-date');
-        const endDateInput = document.getElementById('end-date');
-        const categoryFilter = document.getElementById('category-filter');
-        const domainFilter = document.getElementById('domain-filter');
-
-        // Update filters object
-        this.filters.start_date = startDateInput ? startDateInput.value : '';
-        this.filters.end_date = endDateInput ? endDateInput.value : '';
-        this.filters.category = categoryFilter ? categoryFilter.value : '';
-        this.filters.domain = domainFilter ? domainFilter.value : '';
-
-        // Reload current category with filters
-        this.currentPage = 1;
-        this.loadNews({
-            source: this.currentCategory,
-            category: this.currentCategory,
-            query: this.searchQuery,
-            filters: this.filters,
-            pageNum: 1
-        });
-
-        this.showToast('Filters applied', 'info');
+        // This method needs to be implemented
+        console.log('Applying filters...');
     }
 
     clearFilters() {
-        // Clear all filters
-        const startDateInput = document.getElementById('start-date');
-        const endDateInput = document.getElementById('end-date');
-        const categoryFilter = document.getElementById('category-filter');
-        const domainFilter = document.getElementById('domain-filter');
-
-        if (startDateInput) startDateInput.value = '';
-        if (endDateInput) endDateInput.value = '';
-        if (categoryFilter) categoryFilter.value = '';
-        if (domainFilter) domainFilter.value = '';
-
-        // Reset filters object
-        this.filters = {
-            start_date: '',
-            end_date: '',
-            category: '',
-            domain: '',
-            keywords: ''
-        };
-
-        // Reload current category without filters
-        this.currentPage = 1;
-        this.loadNews({
-            source: this.currentCategory,
-            category: this.currentCategory,
-            query: this.searchQuery,
-            filters: this.filters,
-            pageNum: 1
-        });
-
-        this.showToast('Filters cleared', 'info');
+        // This function needs to be implemented
+        console.log('Clearing filters...');
     }
 
     showLoading() {
