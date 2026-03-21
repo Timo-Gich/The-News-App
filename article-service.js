@@ -73,26 +73,36 @@ class ArticleService {
     async getArticles(params = {}) {
         const {
             page = this.currentPage,
-                category = this.currentCategory,
-                query = this.searchQuery,
-                filters = this.filters
+            category = this.currentCategory,
+            query = this.searchQuery,
+            filters = this.filters
         } = params;
 
         // Update current state
         this.currentPage = page;
-        this.currentCategory = category;
+        this.currentCategory = category || 'latest';
         this.searchQuery = query;
-        this.filters = {...this.filters, ...filters };
+        this.filters = { ...this.filters,
+            ...filters
+        };
 
-        console.log(`[ArticleService] Getting articles: page=${page}, category=${category}, query=${query ? query.substring(0, 20) + '...' : 'none'}`);
+        console.log(`[ArticleService] Getting articles: page=${page}, category=${this.currentCategory}, query=${query ? query.substring(0, 20) + '...' : 'none'}`);
 
         // SPECIAL HANDLING: Search requests
         if (query && query.trim()) {
-            return await this.handleSearchRequest({ page, query, filters });
+            return await this.handleSearchRequest({
+                page,
+                query,
+                filters
+            });
         }
 
         // STANDARD ARTICLE FETCHING
-        return await this.handleArticleRequest({ page, category, filters });
+        return await this.handleArticleRequest({
+            page,
+            category: this.currentCategory,
+            filters
+        });
     }
 
     /**

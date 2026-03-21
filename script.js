@@ -361,7 +361,6 @@ class CurrentsNewsApp {
                 } else if (item.id === 'download-offline-link') {
                     // Download button logic already handled elsewhere
                 } else if (category) {
-                    this.currentCategory = category;
                     this.loadCategoryNews(category);
                 }
 
@@ -1274,27 +1273,20 @@ class CurrentsNewsApp {
     }
 
     async loadCategoryNews(category) {
-        this.currentCategory = category;
+        this.currentCategory = category || 'latest';
         this.currentPage = 1;
         this.searchQuery = '';
 
-        console.log(`[UI] Loading category: ${category}`);
-        
-        // Test the category mapping
-        if (this.apiClient && this.apiClient.mapCategoryToAPI) {
-            const mappedCategory = this.apiClient.mapCategoryToAPI(category);
-            console.log(`[UI] Category mapping: ${category} -> ${mappedCategory}`);
-        }
+        console.log(`[UI] Loading category: ${this.currentCategory}`);
 
         await this.loadNews({
             source: 'category',
-            category: category,
+            category: this.currentCategory,
             pageNum: 1
         });
     }
 
     async loadNews(params = {}, append = false) {
-        // CRITICAL: Prevent concurrent fetches that cause reloading loops
         if (this.isFetching) {
             console.log('[UI] Fetch already in progress, skipping duplicate request');
             return;
@@ -1302,7 +1294,7 @@ class CurrentsNewsApp {
 
         const {
             source = 'latest',
-            category = null,
+            category,
             query = null,
             filters = {},
             pageNum = 1
@@ -1312,18 +1304,12 @@ class CurrentsNewsApp {
         this.showLoading();
 
         try {
-            // Handle local news (location-based) specially
             let result;
-            if (category === 'local') {
+            if ((category || this.currentCategory) === 'local') {
                 console.log('[UI] Loading local news');
-                
-                // Detect user location
                 const location = await geoService.detectUserLocation();
-                
                 if (location.error) {
                     console.warn('[UI] Location detection failed:', location.error);
-                    
-                    // Show appropriate error message based on error type
                     const errorMessages = {
                         'permission_denied': 'Location permission denied. Showing world news instead.',
                         'position_unavailable': 'Location not available. Showing world news instead.',
@@ -1333,8 +1319,6 @@ class CurrentsNewsApp {
                     };
                     const errorMsg = errorMessages[location.error] || 'Unable to detect location. Showing world news instead.';
                     this.showToast(errorMsg, 'warning');
-                    
-                    // Fallback to latest/world news
                     result = await this.articleService.getArticles({
                         page: pageNum,
                         category: 'latest',
@@ -1342,21 +1326,18 @@ class CurrentsNewsApp {
                         filters: filters
                     });
                 } else {
-                    // Location detected successfully, fetch local news
                     console.log('[UI] Location detected:', location.country, location.countryCode);
                     result = await this.articleService.getLocalNews(location);
                 }
             } else {
-                // Use ArticleService - the single point of contact for articles
                 result = await this.articleService.getArticles({
                     page: pageNum,
-                    category: category,
+                    category: category || this.currentCategory,
                     query: query,
                     filters: filters
                 });
             }
 
-            // Store articles and pagination state
             if (append) {
                 this.articles = [...this.articles, ...result.articles];
             } else {
@@ -1364,29 +1345,24 @@ class CurrentsNewsApp {
             }
             this.currentPage = pageNum;
 
-            // Handle pagination based on result - be more permissive
             if (result.hasMore === false && result.totalResults !== undefined && result.totalResults > 0) {
-                // API explicitly says no more content AND provided valid total results
                 this.hasMorePages = false;
             } else {
-                // Default: assume more content is available (Currents API has vast content)
                 this.hasMorePages = true;
             }
 
-            // Render articles
             this.renderArticles(result.articles, append);
             this.hideLoading();
             this.updateStats();
             this.hideError();
 
-            // Show appropriate toast based on data source
             const sourceLabel = result.source === 'api' ? 'online' :
-                               result.source === 'cache' ? 'cached' :
-                               result.source === 'offline' ? 'offline' :
-                               result.source === 'search_api' ? 'search results' :
-                               result.source === 'search_cache' ? 'cached search' :
-                               result.source === 'search_offline' ? 'offline search' : 'articles';
-            const locationLabel = category === 'local' && result.location ? ` (${result.location.country})` : '';
+                result.source === 'cache' ? 'cached' :
+                result.source === 'offline' ? 'offline' :
+                result.source === 'search_api' ? 'search results' :
+                result.source === 'search_cache' ? 'cached search' :
+                result.source === 'search_offline' ? 'offline search' : 'articles';
+            const locationLabel = (category || this.currentCategory) === 'local' && result.location ? ` (${result.location.country})` : '';
             const message = `Loaded ${result.articles.length} articles (${sourceLabel})${locationLabel}`;
             this.showToast(message, result.isCached ? 'warning' : 'success');
 
@@ -1394,7 +1370,6 @@ class CurrentsNewsApp {
             console.error('Failed to load news:', error);
             this.hideLoading();
 
-            // Check if this is an API key configuration error
             if (error.code === 'NO_API_KEY' || error.message.includes('API key not configured')) {
                 this.showApiKeyModal();
                 this.showError('Currents API key required. Please configure your API key to load articles.');
@@ -1402,7 +1377,6 @@ class CurrentsNewsApp {
                 return;
             }
 
-            // Guard: only show error if no existing content
             if (this.articles && this.articles.length > 0) {
                 this.showToast(`Network issue. Showing existing results.`, 'warning');
                 this.isFetching = false;
@@ -1410,6 +1384,7 @@ class CurrentsNewsApp {
             }
 
             this.showError(`Failed to load news: ${error.message}`);
+        } finally {
             this.isFetching = false;
         }
     }

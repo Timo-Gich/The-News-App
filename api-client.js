@@ -93,64 +93,64 @@ class APIClient {
      * Build URL for latest news endpoint
      */
     buildLatestNewsUrl(page, category, filters) {
-            let url = `${this.baseUrl}/latest-news?language=${this.language}&page=${page}&page_size=${this.pageSize}&apiKey=${this.apiKey}`;
+        let url = `${this.baseUrl}/latest-news?language=${this.language}&page=${page}&page_size=${this.pageSize}&apiKey=${this.apiKey}`;
 
-            // Map UI categories to API-compatible categories
-            const apiCategory = this.mapCategoryToAPI(category);
+        const apiCategory = this.mapCategoryToAPI(category);
 
-            // Add category if not 'latest' and if we have a valid API category
-            if (apiCategory && apiCategory !== 'latest') {
-                url += `&category=${encodeURIComponent(apiCategory)}`;
-            }
-
-            // Add filters
-            if (filters.start_date && filters.end_date) {
-                url += `&start_date=${filters.start_date}&end_date=${filters.end_date}`;
-            }
-
-            if (filters.domain) {
-                url += `&domain=${encodeURIComponent(filters.domain)}`;
-            }
-
-            if (filters.keywords) {
-                url += `&keywords=${encodeURIComponent(filters.keywords)}`;
-            }
-
-            return url;
+        if (apiCategory && apiCategory.toLowerCase() !== 'latest') {
+            url += `&category=${encodeURIComponent(apiCategory)}`;
         }
+
+        if (filters.start_date && filters.end_date) {
+            url += `&start_date=${filters.start_date}&end_date=${filters.end_date}`;
+        }
+        if (filters.domain) {
+            url += `&domain=${encodeURIComponent(filters.domain)}`;
+        }
+        if (filters.keywords) {
+            url += `&keywords=${encodeURIComponent(filters.keywords)}`;
+        }
+
+        return url;
+    }
         /**
          * Map UI categories to Currents API compatible categories
          */
     mapCategoryToAPI(category) {
-        if (!category || category === 'latest') {
+        if (!category) {
+            return null;
+        }
+
+        const lowerCategory = category.toLowerCase();
+
+        if (lowerCategory === 'latest') {
             return 'latest';
         }
 
-        // Currents API category mapping
+        // Comprehensive category mapping
         const categoryMap = {
-            // UI Category: API Category
+            'home': 'latest',
+            'latest': 'latest',
             'world': 'world',
             'politics': 'politics',
-            'local': 'local',
-            'entertainment': 'entertainment',
-            'technology': 'technology',
-            'tech': 'technology', // Alias for technology
             'business': 'business',
+            'technology': 'technology',
+            'tech': 'technology',
             'sports': 'sports',
-            'health': 'health',
+            'entertainment': 'entertainment',
             'science': 'science',
-
-            // Additional Currents API categories that might be supported
+            'health': 'health',
+            'local': 'local',
             'general': 'general',
-            'economy': 'business', // Map economy to business
-            'finance': 'business', // Map finance to business
-            'lifestyle': 'entertainment', // Map lifestyle to entertainment
-            'culture': 'entertainment', // Map culture to entertainment
-            'education': 'science', // Map education to science
-            'environment': 'science', // Map environment to science
+            'economy': 'business',
+            'finance': 'business',
+            'lifestyle': 'entertainment',
+            'culture': 'entertainment',
+            'education': 'science',
+            'environment': 'science'
         };
 
-        return categoryMap[category.toLowerCase()] || category;
+        return categoryMap[lowerCategory] || lowerCategory;
     }
 
     /**
