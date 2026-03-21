@@ -2,7 +2,7 @@
 
 class NewsAPIClient {
     constructor(baseUrl, apiKey) {
-        this.baseUrl = baseUrl || 'https://api.thenewsapi.com/v1';
+        this.baseUrl = baseUrl || 'https://newsdata.io/api/1';
         this.apiKey = apiKey;
         this.language = 'en';
         this.pageSize = 30;
@@ -167,71 +167,76 @@ class NewsAPIClient {
     }
 
     /**
-     * Build URL for headlines endpoint
+     * Build URL for latest news endpoint (NewsData.io)
      */
     buildHeadlinesUrl(page, category, locale, filters) {
-        let url = `${this.baseUrl}/news/headlines?api_token=${this.apiKey}&language=${this.language}&page=${page}`;
-
-        // Add locale for local news
-        if (locale) {
-            url += `&locale=${encodeURIComponent(locale)}`;
-        }
+        let url = `${this.baseUrl}/latest?apikey=${this.apiKey}&language=${this.language}&page=${page}`;
 
         // Add category if not 'general'
         if (category && category !== 'general') {
-            url += `&categories=${encodeURIComponent(category)}`;
+            url += `&category=${encodeURIComponent(category)}`;
         }
 
-        // Add date filters
+        // Add country filter for local news (NewsData.io uses country parameter)
+        if (locale) {
+            url += `&country=${encodeURIComponent(locale)}`;
+        }
+
+        // Add date filters (NewsData.io uses from_date and to_date)
         if (filters.start_date && filters.end_date) {
-            url += `&published_after=${filters.start_date}&published_before=${filters.end_date}`;
+            url += `&from_date=${filters.start_date}&to_date=${filters.end_date}`;
         }
 
         return url;
     }
 
     /**
-     * Build URL for top news endpoint
+     * Build URL for archive endpoint (NewsData.io)
      */
     buildTopNewsUrl(page, locale, filters) {
-        let url = `${this.baseUrl}/news/top?api_token=${this.apiKey}&language=${this.language}&page=${page}&limit=${this.pageSize}`;
+        let url = `${this.baseUrl}/archive?apikey=${this.apiKey}&language=${this.language}&page=${page}`;
 
-        // Add locale for focusing on specific countries
+        // Add country filter for local news
         if (locale) {
-            url += `&locale=${encodeURIComponent(locale)}`;
+            url += `&country=${encodeURIComponent(locale)}`;
         }
 
         // Add date filters
         if (filters.start_date) {
-            url += `&published_after=${filters.start_date}`;
+            url += `&from_date=${filters.start_date}`;
         }
         if (filters.end_date) {
-            url += `&published_before=${filters.end_date}`;
+            url += `&to_date=${filters.end_date}`;
         }
 
         return url;
     }
 
     /**
-     * Build URL for search endpoint
+     * Build URL for search endpoint (NewsData.io)
      */
     buildSearchUrl(page, query, filters) {
-        let url = `${this.baseUrl}/news/all?api_token=${this.apiKey}&language=${this.language}&search=${encodeURIComponent(query)}&page=${page}&limit=${this.pageSize}`;
+        let url = `${this.baseUrl}/latest?apikey=${this.apiKey}&language=${this.language}&q=${encodeURIComponent(query)}&page=${page}`;
 
         // Add category if provided
         if (filters.category) {
             const mappedCategory = this.mapCategory(filters.category);
             if (mappedCategory) {
-                url += `&categories=${encodeURIComponent(mappedCategory)}`;
+                url += `&category=${encodeURIComponent(mappedCategory)}`;
             }
+        }
+
+        // Add country filter
+        if (filters.country) {
+            url += `&country=${encodeURIComponent(filters.country)}`;
         }
 
         // Add date filters
         if (filters.start_date) {
-            url += `&published_after=${filters.start_date}`;
+            url += `&from_date=${filters.start_date}`;
         }
         if (filters.end_date) {
-            url += `&published_before=${filters.end_date}`;
+            url += `&to_date=${filters.end_date}`;
         }
 
         return url;
@@ -240,34 +245,25 @@ class NewsAPIClient {
     // ==================== RESPONSE NORMALIZATION ====================
 
     /**
-     * Normalize News API responses to common format
+     * Normalize NewsData.io responses to common format
      */
     normalizeResponse(data, endpointType) {
         try {
             let articles = [];
             let totalResults = 0;
 
-            if (endpointType === 'headlines') {
-                // Headlines endpoint returns data with category keys
-                if (data.data && typeof data.data === 'object') {
-                    // Extract articles from each category
-                    Object.keys(data.data).forEach(category => {
-                        if (Array.isArray(data.data[category])) {
-                            articles.push(...data.data[category]);
-                        }
-                    });
-                }
-                totalResults = articles.length;
-            } else if (endpointType === 'top' || endpointType === 'search') {
-                // Top/All/Search endpoints return array in data
-                if (Array.isArray(data.data)) {
-                    articles = data.data;
-                }
-                // Get meta information
-                if (data.meta) {
-                    totalResults = data.meta.found || data.meta.returned || 0;
-                }
+            // NewsData.io uses 'results' array for articles
+            if (data.results && Array.isArray(data.results)) {
+                articles = data.results;
+                totalResults = data.totalResults || articles.length;
+            } else if (data.data && Array.isArray(data.data)) {
+                // Fallback for other endpoints
+                articles = data.data;
+                totalResults = data.totalResults || articles.length;
             }
+
+            // Check if there are more pages (NewsData.io provides nextPage)
+            const hasMore = data.nextPage ? true : (articles.length >= this.pageSize);
 
             // Normalize article fields
             const normalizedArticles = articles.map(article => this.normalizeArticle(article));
@@ -275,7 +271,7 @@ class NewsAPIClient {
             return {
                 articles: normalizedArticles,
                 totalResults: totalResults,
-                hasMore: articles.length >= this.pageSize,
+                hasMore: hasMore,
                 isCached: false
             };
         } catch (error) {
@@ -294,17 +290,17 @@ class NewsAPIClient {
      */
     normalizeArticle(article) {
         return {
-            id: article.uuid || article.id || '',
+            id: article.article_id || article.uuid || article.id || '',
             title: article.title || 'Untitled',
-            description: article.description || '',
+            description: article.description || article.snippet || '',
             image: article.image_url || article.image || '',
-            link: article.url || article.link || '',
-            source: article.source || 'Unknown',
-            published: article.published_at || article.published || new Date().toISOString(),
-            category: Array.isArray(article.categories) ? article.categories : [article.category || 'general'],
-            keywords: article.keywords || '',
-            author: article.author || '',
-            snippet: article.snippet || ''
+            link: article.link || article.url || '',
+            source: article.source_name || article.source || 'Unknown',
+            published: article.pubDate || article.published_at || article.published || new Date().toISOString(),
+            category: Array.isArray(article.category) ? article.category : [article.category || 'general'],
+            keywords: article.keywords || article.tags || '',
+            author: article.creator || article.author || '',
+            snippet: article.snippet || article.description || ''
         };
     }
 

@@ -145,7 +145,7 @@ self.addEventListener('fetch', event => {
     }
 
     // Handle different types of requests with different strategies
-    if (url.hostname === 'api.currentsapi.services') {
+    if (url.hostname === 'api.currentsapi.services' || url.hostname === 'newsdata.io') {
         event.respondWith(apiFirstStrategy(event));
     } else if (isImageRequest(request)) {
         event.respondWith(imageStrategy(event));

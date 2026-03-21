@@ -79,7 +79,7 @@ class CurrentsNewsApp {
             // Create service instances
             this.offlineManager = new OfflineManager();
             this.apiClient = new APIClient('https://api.currentsapi.services/v1', null);
-            this.newsApiClient = new NewsAPIClient('https://api.thenewsapi.com/v1', null);
+            this.newsApiClient = new NewsAPIClient('https://newsdata.io/api/1', null);
             this.articleService = new ArticleService();
 
             // Initialize offline manager first
@@ -120,11 +120,11 @@ class CurrentsNewsApp {
     async setupNewsAPIClient(apiKey) {
         this.newsApiClient.setAPIConfig({
             apiKey: apiKey,
-            baseUrl: 'https://api.thenewsapi.com/v1',
+            baseUrl: 'https://newsdata.io/api/1',
             language: this.currentLanguage
         });
 
-        console.log('[UI] News API client configured as fallback');
+        console.log('[UI] NewsData.io client configured as fallback');
     }
 
     // ==================== GITHUB PAGES ERROR HANDLING ====================
