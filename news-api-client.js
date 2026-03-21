@@ -170,7 +170,16 @@ class NewsAPIClient {
      * Build URL for latest news endpoint (NewsData.io)
      */
     buildHeadlinesUrl(page, category, locale, filters) {
-        let url = `${this.baseUrl}/latest?apikey=${this.apiKey}&language=${this.language}&page=${page}`;
+        // Validate required parameters
+        if (!this.apiKey) {
+            throw new Error('NewsData.io API key is required');
+        }
+
+        if (!this.language || !this.isValidLanguage(this.language)) {
+            throw new Error('Valid language code is required for NewsData.io');
+        }
+
+        let url = `${this.baseUrl}/latest?apikey=${encodeURIComponent(this.apiKey)}&language=${encodeURIComponent(this.language)}&page=${page}`;
 
         // Add category if not 'general' and valid
         if (category && category !== 'general' && this.isValidCategory(category)) {
@@ -194,19 +203,29 @@ class NewsAPIClient {
      * Build URL for archive endpoint (NewsData.io)
      */
     buildTopNewsUrl(page, locale, filters) {
-        let url = `${this.baseUrl}/archive?apikey=${this.apiKey}&language=${this.language}&page=${page}`;
+        // Validate required parameters
+        if (!this.apiKey) {
+            throw new Error('NewsData.io API key is required');
+        }
+
+        if (!this.language || !this.isValidLanguage(this.language)) {
+            throw new Error('Valid language code is required for NewsData.io');
+        }
+
+        // Archive endpoint requires date filters
+        if (!filters.start_date || !filters.end_date) {
+            throw new Error('Archive endpoint requires both start_date and end_date parameters');
+        }
+
+        if (!this.isValidDate(filters.start_date) || !this.isValidDate(filters.end_date)) {
+            throw new Error('Invalid date format. Use YYYY-MM-DD format');
+        }
+
+        let url = `${this.baseUrl}/archive?apikey=${encodeURIComponent(this.apiKey)}&language=${encodeURIComponent(this.language)}&page=${page}&from_date=${filters.start_date}&to_date=${filters.end_date}`;
 
         // Add country filter for local news
-        if (locale) {
+        if (locale && this.isValidCountryCode(locale)) {
             url += `&country=${encodeURIComponent(locale)}`;
-        }
-
-        // Add date filters
-        if (filters.start_date) {
-            url += `&from_date=${filters.start_date}`;
-        }
-        if (filters.end_date) {
-            url += `&to_date=${filters.end_date}`;
         }
 
         return url;
@@ -216,32 +235,38 @@ class NewsAPIClient {
      * Build URL for search endpoint (NewsData.io)
      */
     buildSearchUrl(page, query, filters) {
-        let url = `${this.baseUrl}/latest?apikey=${this.apiKey}&language=${this.language}&page=${page}`;
-
-        // Add query parameter only if it's not empty
-        if (query && query.trim()) {
-            url += `&q=${encodeURIComponent(query.trim())}`;
+        // Validate required parameters
+        if (!this.apiKey) {
+            throw new Error('NewsData.io API key is required');
         }
+
+        if (!this.language || !this.isValidLanguage(this.language)) {
+            throw new Error('Valid language code is required for NewsData.io');
+        }
+
+        // Query parameter is required for search
+        if (!query || !query.trim()) {
+            throw new Error('Search query is required for NewsData.io');
+        }
+
+        let url = `${this.baseUrl}/latest?apikey=${encodeURIComponent(this.apiKey)}&language=${encodeURIComponent(this.language)}&page=${page}&q=${encodeURIComponent(query.trim())}`;
 
         // Add category if provided
         if (filters.category) {
             const mappedCategory = this.mapCategory(filters.category);
-            if (mappedCategory) {
+            if (mappedCategory && this.isValidCategory(mappedCategory)) {
                 url += `&category=${encodeURIComponent(mappedCategory)}`;
             }
         }
 
         // Add country filter
-        if (filters.country) {
+        if (filters.country && this.isValidCountryCode(filters.country)) {
             url += `&country=${encodeURIComponent(filters.country)}`;
         }
 
         // Add date filters
-        if (filters.start_date) {
-            url += `&from_date=${filters.start_date}`;
-        }
-        if (filters.end_date) {
-            url += `&to_date=${filters.end_date}`;
+        if (filters.start_date && filters.end_date && this.isValidDate(filters.start_date) && this.isValidDate(filters.end_date)) {
+            url += `&from_date=${filters.start_date}&to_date=${filters.end_date}`;
         }
 
         return url;
@@ -482,6 +507,16 @@ class NewsAPIClient {
         } catch (error) {
             return false;
         }
+    }
+
+    /**
+     * Validate language code for NewsData.io
+     */
+    isValidLanguage(languageCode) {
+        if (!languageCode) return false;
+        // NewsData.io supports these language codes
+        const validLanguages = ['en', 'fr', 'es', 'de', 'it', 'pt', 'ru', 'ja', 'zh', 'ar', 'hi', 'ko', 'nl', 'sv', 'no', 'da', 'fi', 'pl', 'tr', 'th', 'vi'];
+        return validLanguages.includes(languageCode.toLowerCase());
     }
 }
 
