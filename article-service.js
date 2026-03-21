@@ -329,8 +329,29 @@ class ArticleService {
                         hasMore: apiResponse.hasMore
                     };
                 } else {
-                    // Empty response from Currents API - don't fallback, report empty results
+                    // Empty response from Currents API - try keyword search as fallback
                     console.warn(`[ArticleService] Currents API returned empty results for category: ${category}`);
+
+                    // Try keyword-based search for the category
+                    const categoryKeywords = this.getCategoryKeywords(category);
+                    if (categoryKeywords) {
+                        console.log(`[ArticleService] Attempting keyword search for category: ${category} -> "${categoryKeywords}"`);
+
+                        const searchResponse = await this.handleSearchRequest({
+                            page,
+                            query: categoryKeywords,
+                            filters
+                        });
+
+                        if (searchResponse.articles && searchResponse.articles.length > 0) {
+                            console.log(`[ArticleService] Keyword search found ${searchResponse.articles.length} articles for category: ${category}`);
+                            return {
+                                ...searchResponse,
+                                source: 'category_keyword_fallback'
+                            };
+                        }
+                    }
+
                     return {
                         articles: [],
                         source: 'currents_api_empty',
@@ -437,6 +458,27 @@ class ArticleService {
 
         // No data available
         throw new Error('No articles available (offline and no cache)');
+    }
+
+    /**
+     * Get keyword search terms for categories that might not be supported by the API
+     */
+    getCategoryKeywords(category) {
+        const keywordMap = {
+            'world': 'world news international',
+            'politics': 'politics government policy',
+            'local': 'local news city community',
+            'entertainment': 'entertainment movies music celebrities',
+            'technology': 'technology tech gadgets innovation',
+            'tech': 'technology tech gadgets innovation',
+            'business': 'business economy finance market',
+            'sports': 'sports games athletics competition',
+            'health': 'health medicine wellness fitness',
+            'science': 'science research discovery technology',
+            'general': 'news current events'
+        };
+
+        return keywordMap[category.toLowerCase()] || null;
     }
 
     /**

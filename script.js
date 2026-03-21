@@ -1278,6 +1278,14 @@ class CurrentsNewsApp {
         this.currentPage = 1;
         this.searchQuery = '';
 
+        console.log(`[UI] Loading category: ${category}`);
+        
+        // Test the category mapping
+        if (this.apiClient && this.apiClient.mapCategoryToAPI) {
+            const mappedCategory = this.apiClient.mapCategoryToAPI(category);
+            console.log(`[UI] Category mapping: ${category} -> ${mappedCategory}`);
+        }
+
         await this.loadNews({
             source: 'category',
             category: category,
