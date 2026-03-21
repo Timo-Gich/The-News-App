@@ -497,9 +497,7 @@ class ArticleService {
     convertFiltersToNewsAPI(currentsFilters) {
         return {
             start_date: currentsFilters.start_date,
-            end_date: currentsFilters.end_date,
-            category: currentsFilters.category,
-            domain: currentsFilters.domain
+            end_date: currentsFilters.end_date
         };
     }
 

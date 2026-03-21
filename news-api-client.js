@@ -96,7 +96,7 @@ class NewsAPIClient {
         console.log(`[NewsAPIClient] Searching articles: ${url}`);
 
         const data = await this.makeRequest(url);
-        const normalized = this.normalizeResponse(data, 'top');
+        const normalized = this.normalizeResponse(data, 'headlines');
 
         return {
             ...normalized,
@@ -191,45 +191,15 @@ class NewsAPIClient {
             url += `&country=${encodeURIComponent(locale)}`;
         }
 
-        // Add date filters (NewsData.io uses from_date and to_date)
-        if (filters.start_date && filters.end_date && this.isValidDate(filters.start_date) && this.isValidDate(filters.end_date)) {
-            url += `&from_date=${filters.start_date}&to_date=${filters.end_date}`;
+        // Add domain filter (NewsData.io uses domain parameter)
+        if (filters.domain) {
+            url += `&domain=${encodeURIComponent(filters.domain)}`;
         }
 
         return url;
     }
 
-    /**
-     * Build URL for archive endpoint (NewsData.io)
-     */
-    buildTopNewsUrl(page, locale, filters) {
-        // Validate required parameters
-        if (!this.apiKey) {
-            throw new Error('NewsData.io API key is required');
-        }
 
-        if (!this.language || !this.isValidLanguage(this.language)) {
-            throw new Error('Valid language code is required for NewsData.io');
-        }
-
-        // Archive endpoint requires date filters
-        if (!filters.start_date || !filters.end_date) {
-            throw new Error('Archive endpoint requires both start_date and end_date parameters');
-        }
-
-        if (!this.isValidDate(filters.start_date) || !this.isValidDate(filters.end_date)) {
-            throw new Error('Invalid date format. Use YYYY-MM-DD format');
-        }
-
-        let url = `${this.baseUrl}/archive?apikey=${encodeURIComponent(this.apiKey)}&language=${encodeURIComponent(this.language)}&page=${page}&from_date=${filters.start_date}&to_date=${filters.end_date}`;
-
-        // Add country filter for local news
-        if (locale && this.isValidCountryCode(locale)) {
-            url += `&country=${encodeURIComponent(locale)}`;
-        }
-
-        return url;
-    }
 
     /**
      * Build URL for search endpoint (NewsData.io)
@@ -249,7 +219,7 @@ class NewsAPIClient {
             throw new Error('Search query is required for NewsData.io');
         }
 
-        let url = `${this.baseUrl}/latest?apikey=${encodeURIComponent(this.apiKey)}&language=${encodeURIComponent(this.language)}&page=${page}&q=${encodeURIComponent(query.trim())}`;
+        let url = `${this.baseUrl}/news?apikey=${encodeURIComponent(this.apiKey)}&language=${encodeURIComponent(this.language)}&page=${page}&q=${encodeURIComponent(query.trim())}`;
 
         // Add category if provided
         if (filters.category) {
@@ -267,6 +237,11 @@ class NewsAPIClient {
         // Add date filters
         if (filters.start_date && filters.end_date && this.isValidDate(filters.start_date) && this.isValidDate(filters.end_date)) {
             url += `&from_date=${filters.start_date}&to_date=${filters.end_date}`;
+        }
+
+        // Add domain filter (NewsData.io uses domain parameter)
+        if (filters.domain) {
+            url += `&domain=${encodeURIComponent(filters.domain)}`;
         }
 
         return url;
