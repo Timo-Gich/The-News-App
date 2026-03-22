@@ -512,8 +512,8 @@ class ArticleService {
             const countryName = getCountryName(countryCode) || country;
             console.log(`[ArticleService] Fetching local news for ${countryName} (${language}, locale: ${locale})`);
 
-            // Try News API first for local news if locale is supported and fallback is enabled
-            if (locale && this.fallbackEnabled && this.newsApiClient && this.isOnline) {
+            // Try News API first for local news if locale is supported
+            if (locale && this.newsApiClient && this.isOnline) {
                 try {
                     console.log(`[ArticleService] Using News API for local news (locale=${locale})`);
                     const newsResponse = await this.newsApiClient.fetchLocalNews({ page: 1, locale });
@@ -536,6 +536,7 @@ class ArticleService {
             }
 
             // Fallback: Use keywords with country name for Currents API
+            console.log('[ArticleService] Falling back to Currents API for local news');
             const keywords = countryName;
             const params = {
                 page: 1,
