@@ -332,6 +332,18 @@ h6 {
     color: var(--text-color);
 }
 
+.logo-image {
+    height: 40px;
+    width: auto;
+    object-fit: contain;
+    border-radius: 6px;
+    transition: transform 0.2s ease;
+}
+
+.logo-image:hover {
+    transform: scale(1.05);
+}
+
 
 /* Hamburger Menu */
 
