@@ -35,13 +35,15 @@ class CacheController {
             const baseUrl = window.location.pathname.replace(/\/[^\/]*$/, '/');
             const scope = baseUrl || './';
 
+            console.log('Registering Service Worker with scope:', scope);
+
             // Register enhanced service worker with robust caching
             this.registration = await navigator.serviceWorker.register('./sw-enhanced.js', {
                 scope: scope,
                 updateViaCache: 'none'
             });
 
-            console.log('Service Worker registered:', this.registration);
+            console.log('Service Worker registered successfully:', this.registration);
 
             // Check for updates
             if (this.registration.waiting) {
@@ -62,15 +64,65 @@ class CacheController {
 
             // Wait for service worker to be ready
             await navigator.serviceWorker.ready;
+            console.log('Service Worker is ready');
 
             // Initialize caches
             await this.initCaches();
+
+            // Check PWA installability
+            this.checkPWAInstallability();
 
             return true;
         } catch (error) {
             console.error('Service Worker registration failed:', error);
             return false;
         }
+    }
+
+    checkPWAInstallability() {
+        // Check if PWA criteria are met
+        const checks = {
+            manifest: false,
+            serviceWorker: false,
+            https: false
+        };
+
+        // Check manifest
+        const manifestLink = document.querySelector('link[rel="manifest"]');
+        if (manifestLink && manifestLink.href) {
+            checks.manifest = true;
+            console.log('✓ Manifest found');
+        } else {
+            console.log('✗ Manifest missing');
+        }
+
+        // Check service worker
+        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+            checks.serviceWorker = true;
+            console.log('✓ Service Worker active');
+        } else {
+            console.log('✗ Service Worker not active');
+        }
+
+        // Check HTTPS
+        checks.https = location.protocol === 'https:' || location.hostname === 'localhost';
+        if (checks.https) {
+            console.log('✓ HTTPS/localhost check passed');
+        } else {
+            console.log('✗ HTTPS required for PWA');
+        }
+
+        // Overall PWA status
+        const isPWAReady = checks.manifest && checks.serviceWorker && checks.https;
+
+        if (isPWAReady) {
+            console.log('✓ PWA criteria met - Install button should appear');
+        } else {
+            console.log('✗ PWA criteria not met - Install button will not appear');
+            console.log('Missing:', Object.keys(checks).filter(key => !checks[key]));
+        }
+
+        return isPWAReady;
     }
 
     async initCaches() {
