@@ -88,20 +88,7 @@ class CurrentsNewsApp {
             this.gnewsApiClient = new GNewsAPIClient('https://gnews.io/api/v4', null);
             this.articleService = new ArticleService();
 
-            // Initialize cache controller first (for PWA functionality)
-            if (window.CacheController) {
-                this.cacheController = new CacheController();
-                const swInitialized = await this.cacheController.init();
-                console.log('Cache Controller initialized:', swInitialized);
-
-                if (!swInitialized) {
-                    this.showToast('Service Worker initialization failed. PWA features may not work properly.', 'warning');
-                }
-            } else {
-                console.warn('CacheController not found - PWA features may not work');
-            }
-
-            // Initialize offline manager
+            // Initialize offline manager first
             await this.offlineManager.init();
             console.log('Offline Manager initialized');
 
