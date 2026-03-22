@@ -7,6 +7,9 @@ class CurrentsNewsApp {
         this.apiClient = null;
         this.newsApiClient = null;
         this.offlineManager = null;
+        this.smartPreloader = null;
+        this.advancedCacheManager = null;
+        this.performanceOptimizer = null;
 
         // UI State
         this.currentCategory = 'latest';
@@ -81,10 +84,24 @@ class CurrentsNewsApp {
             this.apiClient = new APIClient('https://api.currentsapi.services/v1', null);
             this.newsApiClient = new NewsAPIClient('https://newsdata.io/api/1', null);
             this.articleService = new ArticleService();
+            this.smartPreloader = new SmartPreloader();
+            this.advancedCacheManager = new AdvancedCacheManager();
+            this.performanceOptimizer = new PerformanceOptimizer();
 
             // Initialize offline manager first
             await this.offlineManager.init();
             console.log('Offline Manager initialized');
+
+            // Initialize new modules
+            this.smartPreloader.init(this.offlineManager, this.articleService);
+            this.advancedCacheManager.init(
+                this.articleService.cacheController,
+                this.offlineManager.storage,
+                this.apiClient,
+                this.offlineManager
+            );
+            this.performanceOptimizer.init();
+            console.log('Advanced modules initialized');
 
             // Connect services
             this.offlineManager.setAPIClient(this.apiClient);
@@ -95,6 +112,12 @@ class CurrentsNewsApp {
 
             // Start auto-download
             this.offlineManager.autoDownloadLatestPages();
+
+            // Start smart preloading
+            this.smartPreloader.startPreloading();
+
+            // Start performance optimization
+            this.performanceOptimizer.warmCache();
 
             // Update stats
             await this.offlineManager.updateStats();
