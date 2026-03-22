@@ -4,6 +4,7 @@ class ArticleService {
     constructor() {
         this.apiClient = null;
         this.newsApiClient = null;
+        this.gnewsApiClient = null;
         this.offlineManager = null;
         this.storage = null;
 
@@ -14,6 +15,7 @@ class ArticleService {
         this.isOnline = navigator.onLine;
         this.searchQuery = '';
         this.fallbackEnabled = false;
+        this.gnewsFallbackEnabled = false;
         this.filters = {
             start_date: '',
             end_date: '',
@@ -28,9 +30,10 @@ class ArticleService {
     }
 
     // Initialize with dependencies
-    init(apiClient, newsApiClient, offlineManager, storage) {
+    init(apiClient, newsApiClient, gnewsApiClient, offlineManager, storage) {
         this.apiClient = apiClient;
         this.newsApiClient = newsApiClient;
+        this.gnewsApiClient = gnewsApiClient;
         this.offlineManager = offlineManager;
         this.storage = storage;
         console.log('ArticleService initialized');
@@ -40,6 +43,12 @@ class ArticleService {
     setFallbackEnabled(enabled) {
         this.fallbackEnabled = enabled;
         console.log(`[ArticleService] Fallback mechanism ${enabled ? 'enabled' : 'disabled'}`);
+    }
+
+    // Enable or disable GNews fallback mechanism
+    setGNewsFallbackEnabled(enabled) {
+        this.gnewsFallbackEnabled = enabled;
+        console.log(`[ArticleService] GNews fallback mechanism ${enabled ? 'enabled' : 'disabled'}`);
     }
 
     // ==================== STATE MANAGEMENT ====================
@@ -73,16 +82,16 @@ class ArticleService {
     async getArticles(params = {}) {
         const {
             page = this.currentPage,
-            category = this.currentCategory,
-            query = this.searchQuery,
-            filters = this.filters
+                category = this.currentCategory,
+                query = this.searchQuery,
+                filters = this.filters
         } = params;
 
         // Update current state
         this.currentPage = page;
         this.currentCategory = category || 'latest';
         this.searchQuery = query;
-        this.filters = { ...this.filters,
+        this.filters = {...this.filters,
             ...filters
         };
 
@@ -256,8 +265,39 @@ class ArticleService {
                     }
 
 
-                // Fall through to offline search
-            }}
+                    // Try GNews API as additional fallback if enabled
+                    if (this.gnewsFallbackEnabled && this.gnewsApiClient) {
+                        console.log(`[ArticleService] on Currents API search, attempting fallback to GNews API...`);
+
+                        try {
+                            const gnewsResponse = await this.gnewsApiClient.searchArticles({ page, query, filters });
+
+                            if (gnewsResponse.articles && gnewsResponse.articles.length > 0) {
+                                console.log(`[ArticleService] Search found ${gnewsResponse.articles.length} articles from GNews API (fallback)`);
+
+                                // Cache search results
+                                await this.storage.cacheSearchResults(query, filters, gnewsResponse.articles).catch(err =>
+                                    console.warn('[ArticleService] Failed to cache search results:', err)
+                                );
+
+                                return {
+                                    articles: gnewsResponse.articles,
+                                    source: 'search_gnews_api_fallback',
+                                    pageNum: page,
+                                    isCached: false,
+                                    totalResults: gnewsResponse.totalResults,
+                                    hasMore: gnewsResponse.hasMore
+                                };
+                            }
+                        } catch (gnewsError) {
+                            console.error('[ArticleService] GNews API search fallback also failed:', gnewsError.message);
+                            // Continue to offline search below
+                        }
+                    }
+
+                    // Fall through to offline search
+                }
+            }
         } else if (!this.apiClient) {
             console.error('[ArticleService] Currents API client not initialized');
         }
@@ -407,8 +447,39 @@ class ArticleService {
                     }
 
 
-                // Fall through to offline fallback
-            }}
+                    // Try GNews API as additional fallback if enabled
+                    if (this.gnewsFallbackEnabled && this.gnewsApiClient) {
+                        console.log(`[ArticleService] on Currents API, attempting fallback to GNews API...`);
+
+                        try {
+                            const gnewsResponse = await this.gnewsApiClient.fetchTopHeadlines({ page, category, filters });
+
+                            if (gnewsResponse.articles && gnewsResponse.articles.length > 0) {
+                                console.log(`[ArticleService] Fetched ${gnewsResponse.articles.length} articles from GNews API (fallback)`);
+
+                                // Cache this page for offline use
+                                this.storage.cacheArticlesPage(gnewsResponse.articles, page, category).catch(err =>
+                                    console.warn('[ArticleService] Failed to cache GNews fallback page:', err)
+                                );
+
+                                return {
+                                    articles: gnewsResponse.articles,
+                                    source: 'gnews_api_fallback',
+                                    pageNum: page,
+                                    isCached: false,
+                                    totalResults: gnewsResponse.totalResults,
+                                    hasMore: gnewsResponse.hasMore
+                                };
+                            }
+                        } catch (gnewsError) {
+                            console.error('[ArticleService] GNews API fallback also failed:', gnewsError.message);
+                            // Continue to regular fallbacks below
+                        }
+                    }
+
+                    // Fall through to offline fallback
+                }
+            }
         } else if (!this.apiClient) {
             console.error('[ArticleService] Currents API client not initialized');
         }

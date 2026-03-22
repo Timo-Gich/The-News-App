@@ -424,6 +424,24 @@
                         <small id="fallback-status-hint" style="display: none; color: var(--warning-color);">Add a News API key to enable this feature</small>
                     </div>
 
+                    <hr style="margin: 20px 0; border: none; border-top: 1px solid var(--border-color);">
+
+                    <div class="form-group">
+                        <label for="gnews-api-key-input">
+                        <i class="fas fa-newspaper"></i> GNews API Key (Optional - Additional Fallback)
+                    </label>
+                        <input type="password" id="gnews-api-key-input" placeholder="Paste your GNews API key here (optional)" autocomplete="off">
+                        <small>Optional additional fallback. Get it from <a href="https://gnews.io/" target="_blank">gnews.io</a></small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                        <input type="checkbox" id="enable-gnews-fallback" checked disabled>
+                        <span id="gnews-fallback-status-text">Enable fallback to GNews API when other APIs fail</span>
+                    </label>
+                        <small id="gnews-fallback-status-hint" style="display: none; color: var(--warning-color);">Add a GNews API key to enable this feature</small>
+                    </div>
+
                     <div class="form-group">
                         <label>
                         <input type="checkbox" id="save-api-key" checked>
@@ -467,6 +485,7 @@
     <script src="cache-controller.js"></script>
     <script src="api-client.js"></script>
     <script src="news-api-client.js"></script>
+    <script src="gnews-api-client.js"></script>
     <script src="offline-manager.js"></script>
     <script src="country-language-map.js"></script>
     <script src="geo-service.js"></script>

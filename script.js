@@ -33,7 +33,7 @@ class CurrentsNewsApp {
         this.init();
     }
 
-    // ==================== INITIALIZATION ====================
+    // ====Added================ INITIALIZATION ====================
     async init() {
         // Set up theme first
         this.setTheme(this.isDarkMode);
@@ -44,6 +44,7 @@ class CurrentsNewsApp {
         // Check for saved API keys
         const savedCurrentsKey = localStorage.getItem('currents_api_key');
         const savedNewsKey = localStorage.getItem('news_api_key');
+        const savedGNewsKey = localStorage.getItem('gnews_api_key');
 
         if (savedCurrentsKey) {
             await this.setupAPIClient(savedCurrentsKey);
@@ -51,6 +52,10 @@ class CurrentsNewsApp {
 
         if (savedNewsKey) {
             await this.setupNewsAPIClient(savedNewsKey);
+        }
+
+        if (savedGNewsKey) {
+            await this.setupGNewsAPIClient(savedGNewsKey);
         }
 
         // Show modal if no Currents API key (Currents is required, News API is optional)
@@ -80,6 +85,7 @@ class CurrentsNewsApp {
             this.offlineManager = new OfflineManager();
             this.apiClient = new APIClient('https://api.currentsapi.services/v1', null);
             this.newsApiClient = new NewsAPIClient('https://newsdata.io/api/1', null);
+            this.gnewsApiClient = new GNewsAPIClient('https://gnews.io/api/v4', null);
             this.articleService = new ArticleService();
 
             // Initialize offline manager first
@@ -88,7 +94,7 @@ class CurrentsNewsApp {
 
             // Connect services
             this.offlineManager.setAPIClient(this.apiClient);
-            this.articleService.init(this.apiClient, this.newsApiClient, this.offlineManager, this.offlineManager.storage);
+            this.articleService.init(this.apiClient, this.newsApiClient, this.gnewsApiClient, this.offlineManager, this.offlineManager.storage);
 
             // Set up toast function
             this.showToast = this.offlineManager.showToast.bind(this.offlineManager);
@@ -125,6 +131,16 @@ class CurrentsNewsApp {
         });
 
         console.log('[UI] NewsData.io client configured as fallback');
+    }
+
+    async setupGNewsAPIClient(apiKey) {
+        this.gnewsApiClient.setAPIConfig({
+            apiKey: apiKey,
+            baseUrl: 'https://gnews.io/api/v4',
+            language: this.currentLanguage
+        });
+
+        console.log('[UI] GNews client configured as additional fallback');
     }
 
     // ==================== GITHUB PAGES ERROR HANDLING ====================
@@ -536,6 +552,29 @@ class CurrentsNewsApp {
                     fallbackCheckbox.checked = false;
                     if (fallbackStatusHint) {
                         fallbackStatusHint.style.display = 'block';
+                    }
+                }
+            });
+        }
+
+        // GNews API key input - enable/disable fallback checkbox
+        const gnewsApiKeyInput = document.getElementById('gnews-api-key-input');
+        if (gnewsApiKeyInput) {
+            gnewsApiKeyInput.addEventListener('input', () => {
+                const hasGNewsKey = gnewsApiKeyInput.value.trim().length > 0;
+                const gnewsFallbackCheckbox = document.getElementById('enable-gnews-fallback');
+                const gnewsFallbackStatusHint = document.getElementById('gnews-fallback-status-hint');
+
+                if (hasGNewsKey) {
+                    gnewsFallbackCheckbox.disabled = false;
+                    if (gnewsFallbackStatusHint) {
+                        gnewsFallbackStatusHint.style.display = 'none';
+                    }
+                } else {
+                    gnewsFallbackCheckbox.disabled = true;
+                    gnewsFallbackCheckbox.checked = false;
+                    if (gnewsFallbackStatusHint) {
+                        gnewsFallbackStatusHint.style.display = 'block';
                     }
                 }
             });
@@ -1649,8 +1688,10 @@ class CurrentsNewsApp {
     saveApiKey() {
         const currentsApiKey = document.getElementById('api-key-input').value.trim();
         const newsApiKey = document.getElementById('news-api-key-input').value.trim();
+        const gnewsApiKey = document.getElementById('gnews-api-key-input').value.trim();
         const saveChecked = document.getElementById('save-api-key').checked;
         const enableFallback = document.getElementById('enable-fallback').checked;
+        const enableGNewsFallback = document.getElementById('enable-gnews-fallback').checked;
 
         // Currents API key is required
         if (!currentsApiKey) {
@@ -1667,6 +1708,12 @@ class CurrentsNewsApp {
                 localStorage.setItem('news_api_key', newsApiKey);
                 localStorage.setItem('enable_api_fallback', enableFallback ? 'true' : 'false');
             }
+            
+            // Only save GNews API key if provided
+            if (gnewsApiKey) {
+                localStorage.setItem('gnews_api_key', gnewsApiKey);
+                localStorage.setItem('enable_gnews_fallback', enableGNewsFallback ? 'true' : 'false');
+            }
         }
 
         // Configure API clients
@@ -1674,17 +1721,25 @@ class CurrentsNewsApp {
         if (newsApiKey) {
             this.setupNewsAPIClient(newsApiKey);
         }
+        if (gnewsApiKey) {
+            this.setupGNewsAPIClient(gnewsApiKey);
+        }
 
         // Inform ArticleService about fallback status
         if (this.articleService) {
             this.articleService.setFallbackEnabled(enableFallback && newsApiKey);
+            this.articleService.setGNewsFallbackEnabled(enableGNewsFallback && gnewsApiKey);
         }
 
         this.hideApiKeyModal();
         this.loadLatestNews();
         
-        const message = newsApiKey && enableFallback 
-            ? 'API keys saved! Fallback enabled.' 
+        const fallbackMessage = [];
+        if (newsApiKey && enableFallback) fallbackMessage.push('News API fallback');
+        if (gnewsApiKey && enableGNewsFallback) fallbackMessage.push('GNews API fallback');
+        
+        const message = fallbackMessage.length > 0 
+            ? `API keys saved! ${fallbackMessage.join(' and ')} enabled.` 
             : 'Currents API key saved successfully';
         this.showToast(message, 'success');
     }
