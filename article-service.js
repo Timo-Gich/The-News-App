@@ -569,8 +569,10 @@ class ArticleService {
             return await this.getArticles({ category: 'latest' });
         }
 
+        // Map country code to GNews API locale
+        const gnewsLocale = this.gnewsApiClient ? this.gnewsApiClient.countryCodeToLocale(countryCode) : null;
         // Map country code to News API locale
-        const locale = this.newsApiClient ? this.newsApiClient.countryCodeToLocale(countryCode) : null;
+        const newsApiLocale = this.newsApiClient ? this.newsApiClient.countryCodeToLocale(countryCode) : null;
 
         // Map country to language for API
         const language = getLanguageForCountry(countryCode);
@@ -581,13 +583,35 @@ class ArticleService {
             this.setLanguage(language);
 
             const countryName = getCountryName(countryCode) || country;
-            console.log(`[ArticleService] Fetching local news for ${countryName} (${language}, locale: ${locale})`);
+            console.log(`[ArticleService] Fetching local news for ${countryName} (${language}, gnews locale: ${gnewsLocale}, newsapi locale: ${newsApiLocale})`);
 
-            // Try News API first for local news if locale is supported
-            if (locale && this.newsApiClient && this.isOnline) {
+            // Try GNews API first for local news if locale is supported
+            if (gnewsLocale && this.gnewsApiClient && this.isOnline) {
                 try {
-                    console.log(`[ArticleService] Using News API for local news (locale=${locale})`);
-                    const newsResponse = await this.newsApiClient.fetchLocalNews({ page: 1, locale });
+                    console.log(`[ArticleService] Using GNews API for local news (locale=${gnewsLocale})`);
+                    const gnewsResponse = await this.gnewsApiClient.fetchLocalNews({ page: 1, locale: gnewsLocale });
+
+                    if (gnewsResponse.articles && gnewsResponse.articles.length > 0) {
+                        console.log(`[ArticleService] Fetched ${gnewsResponse.articles.length} local articles from GNews API`);
+                        return {
+                            articles: gnewsResponse.articles,
+                            source: 'gnews_api_local',
+                            location: { country, countryCode },
+                            isCached: false,
+                            totalResults: gnewsResponse.totalResults,
+                            hasMore: gnewsResponse.hasMore
+                        };
+                    }
+                } catch (error) {
+                    console.warn('[ArticleService] GNews API local news failed, falling back to News API:', error.message);
+                }
+            }
+
+            // Try News API second for local news if locale is supported
+            if (newsApiLocale && this.newsApiClient && this.isOnline) {
+                try {
+                    console.log(`[ArticleService] Using News API for local news (locale=${newsApiLocale})`);
+                    const newsResponse = await this.newsApiClient.fetchLocalNews({ page: 1, locale: newsApiLocale });
 
                     if (newsResponse.articles && newsResponse.articles.length > 0) {
                         console.log(`[ArticleService] Fetched ${newsResponse.articles.length} local articles from News API`);
