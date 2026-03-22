@@ -221,18 +221,13 @@ class ArticleService {
                     throw error; // Re-throw so UI knows API key is missing
                 }
 
-                // IMPORTANT: Only fallback for quota/server errors, NOT for generic failures
-                const isQuotaError = error.message.includes('usage_limit') ||
-                    error.message.includes('quota') ||
-                    error.message.includes('402') ||
-                    error.message.includes('Rate limit');
-                const isServerError = error.message.includes('503') || error.message.includes('Service Unavailable');
-                const shouldFallback = (isQuotaError || isServerError);
+                // Broader fallback condition
+                const isApiKeyError = error.message.includes('Invalid API key') || error.message.includes('401');
+                const shouldFallback = this.fallbackEnabled && !isApiKeyError;
 
                 // ONLY fallback to News API for quota/server errors when explicitly enabled
                 if (shouldFallback && this.fallbackEnabled && this.newsApiClient) {
-                    const reason = isServerError ? 'Service Unavailable' : 'Quota exceeded';
-                    console.log(`[ArticleService] ${reason} on Currents API search, attempting fallback to News API...`);
+                    console.log(`[ArticleService] on Currents API search, attempting fallback to News API...`);
 
                     try {
                         const newsFilters = this.convertFiltersToNewsAPI(filters);
@@ -259,13 +254,10 @@ class ArticleService {
                         console.error('[ArticleService] News API search fallback also failed:', fallbackError.message);
                         // Continue to offline search below
                     }
-                } else if (!isQuotaError && !isServerError) {
-                    // For non-quota/server errors, report without fallback
-                    console.error(`[ArticleService] Currents API search error (${error.message}) - not attempting fallback`);
-                }
+
 
                 // Fall through to offline search
-            }
+            }}
         } else if (!this.apiClient) {
             console.error('[ArticleService] Currents API client not initialized');
         }
@@ -380,18 +372,13 @@ class ArticleService {
                     throw error; // Re-throw so UI knows API key is missing
                 }
 
-                // IMPORTANT: Only fallback for specific server/quota errors, NOT for generic failures
-                const isQuotaError = error.message.includes('usage_limit') ||
-                    error.message.includes('quota') ||
-                    error.message.includes('402') ||
-                    error.message.includes('Rate limit');
-                const isServerError = error.message.includes('503') || error.message.includes('Service Unavailable');
-                const shouldFallback = (isQuotaError || isServerError);
+                // Broader fallback condition
+                const isApiKeyError = error.message.includes('Invalid API key') || error.message.includes('401');
+                const shouldFallback = this.fallbackEnabled && !isApiKeyError;
 
                 // ONLY try fallback to News API for quota/server errors, and only if explicitly enabled
                 if (shouldFallback && this.fallbackEnabled && this.newsApiClient) {
-                    const reason = isServerError ? 'Service Unavailable' : 'Quota exceeded';
-                    console.log(`[ArticleService] ${reason} on Currents API, attempting fallback to News API...`);
+                    console.log(`[ArticleService] on Currents API, attempting fallback to News API...`);
 
                     try {
                         const newsFilters = this.convertFiltersToNewsAPI(filters);
@@ -418,13 +405,10 @@ class ArticleService {
                         console.error('[ArticleService] News API fallback also failed:', fallbackError.message);
                         // Continue to regular fallbacks below
                     }
-                } else if (!isQuotaError && !isServerError) {
-                    // For non-quota/server errors, log and report to user
-                    console.error(`[ArticleService] Currents API error (${error.message}) - not attempting fallback`);
-                }
+
 
                 // Fall through to offline fallback
-            }
+            }}
         } else if (!this.apiClient) {
             console.error('[ArticleService] Currents API client not initialized');
         }
